@@ -8,7 +8,7 @@ CR2SE is credits to service protocol. It defines a way for peers to exchange ser
 - [Network](./Network.md) - Transport protocol  
 - [NodeApi](./NodeApi.md) - An API to send commands to a CR2SE implementation  
 - [Identity](./Identity.md) - Identification  
-- Encryption - Signing, encrypting, verifying  
+- [Encryption](./Encryption.md) - Signing, encrypting, verifying  
 - Ledger - Manage credit, debit and trust  
 - Board - Service offerings, asking for services, adresses for other peers, meta data  
 - Storage - Resource Sharing  
