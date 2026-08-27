@@ -2,6 +2,8 @@
 
 CR2SE uses cryptography for identity, signatures, confidentiality, integrity, and secure communication between identities.
 
+The [CR2SE Glossary](./Glossary.md) defines the common meaning of **identity**, **node**, **peer**, and **connection** used by this specification.
+
 Encryption is intentionally **not required for ordinary CR2SE storage or communication**.
 
 A CR2SE node may store or transmit plaintext data.

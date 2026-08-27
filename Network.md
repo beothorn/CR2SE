@@ -1,6 +1,8 @@
-# CR2SE Transfer protocol
+# CR2SE Transfer Protocol
 
 CR2SE requires a binary application protocol for persistent, bidirectional communication between peers over TCP.
+
+The [CR2SE Glossary](./Glossary.md) defines the common meaning of **node**, **peer**, **connection**, **initiator**, and **acceptor** used by this specification.
 
 It is designed for applications where two connected peers may independently initiate operations and where multiple operations may be active at the same time over the same connection.
 

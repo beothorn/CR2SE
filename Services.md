@@ -2,6 +2,8 @@
 
 Services are the heart of CR2SE.
 
+Common domain terms such as **service**, **offering**, **invocation**, **service requester**, and **service provider** are defined in the [CR2SE Glossary](./Glossary.md).
+
 A service is a versioned operation that one CR2SE identity performs for another identity in exchange for credits. Every service has:
 
 ```text
@@ -29,13 +31,13 @@ This document defines the common service model, the separately retrievable servi
 
 ## 1. Service Roles
 
-A service interaction has two roles:
+A service invocation has two roles:
 
 ```text
-requester
+service requester (requester)
     asks for the service and pays its price
 
-provider
+service provider (provider)
     performs the service and returns its output
 ```
 

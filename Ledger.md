@@ -2,6 +2,8 @@
 
 The CR2SE ledger records the economic relationship between a local identity and other CR2SE identities.
 
+Common domain terms such as **credit**, **credit issuer**, **credit owner**, **credit claim**, **local ledger**, and **trust score** are defined in the [CR2SE Glossary](./Glossary.md).
+
 It records three kinds of information:
 
 * credits the local identity owns;
@@ -12,7 +14,7 @@ The ledger is local state.
 
 CR2SE does not define a global ledger, distributed consensus mechanism, authoritative balance database, or synchronization protocol.
 
-Two peers interacting with each other will normally maintain corresponding records, but each peer trusts its own ledger.
+Two identities interacting with each other will normally maintain corresponding records, but each identity trusts its own local ledger.
 
 Their records may disagree.
 
@@ -48,7 +50,7 @@ Every CR2SE identity maintains its own view of its economic relationships.
 Conceptually, a ledger may be represented as:
 
 ```text
-Peer Identity | Owned Credits | Issued Credits | Trust
+Other Identity | Owned Credits | Issued Credits | Trust
 ```
 
 This is only a conceptual representation.

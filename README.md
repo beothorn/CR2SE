@@ -1,6 +1,8 @@
 # CR2SE
 
-CR2SE is credits to service protocol. It defines a way for peers to exchange services to credits. It is an alternative for services that uses ads, money payments or donations as a way to pay infrastructure. It also creates decentralized networks, less exposed for scraping and attacks. 
+CR2SE is a peer-to-peer protocol in which identities exchange services for identity-issued credits. It is an alternative to funding infrastructure through advertising, monetary payments, or donations. It also supports decentralized networks that can be less exposed to scraping and attacks.
+
+Domain terms have consistent meanings across the specifications and are defined in the [CR2SE Glossary](./Glossary.md).
 
 
 # Layers
@@ -12,6 +14,7 @@ CR2SE is credits to service protocol. It defines a way for peers to exchange ser
 - [Ledger](./Ledger.md) - Manage credit, debit and trust  
 - [Board](./Board.md) - Compact service offerings, wanted services, payment terms, and metadata
 - [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks
+- [Glossary](./Glossary.md) - Common domain vocabulary
 - Storage - Resource Sharing Service  
 - Computation - Resource Sharing Service  
 - Page - Static HTML Page Hosting Service   

@@ -1,9 +1,11 @@
 # CR2SE Node API
 
-The CR2SE Node API defines how an application controls a local CR2SE node.  
+The CR2SE Node API defines how an application controls a local CR2SE node.
 
-This is used in case a single process manages peers communication, in a server-like manner.  
-When a peer function more akin to a client, a process can use a CR2SE implementation directly, via libraries.   
+The [CR2SE Glossary](./Glossary.md) defines the common meaning of **Node API**, **node**, **peer**, **connection**, **Board**, **offering**, and **invocation** used by this specification.
+
+This form is useful when one process manages communication with peers as a long-running node.
+When an application acts more like a local client, it may embed a CR2SE implementation directly through libraries.
 
 A CR2SE node maintains connections to other nodes, communicates with those nodes, and exposes services available through those connections.
 

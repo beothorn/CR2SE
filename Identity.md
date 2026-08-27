@@ -2,6 +2,8 @@
 
 CR2SE identities provide a stable way to identify participants independently of their network address, machine, process, or current connection.
 
+Common domain terms such as **CR2SE identity**, **CR2SE ID**, **CR2SE node**, **peer**, and **connection** are defined in the [CR2SE Glossary](./Glossary.md).
+
 An identity is based on a cryptographic key pair.
 
 The public key is used to derive the identity identifier. The private key is used to prove control of that identity.

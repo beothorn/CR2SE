@@ -2,14 +2,16 @@
 
 The CR2SE Board describes the services an identity is willing to provide and the services it wants other identities to provide.
 
+Common domain terms such as **Board publisher**, **offering**, **provided service**, and **wanted service** are defined in the [CR2SE Glossary](./Glossary.md).
+
 The Board is the service-discovery layer of CR2SE.
 
 It answers questions such as:
 
 ```text
-What services does this peer provide?
+What provided services does this Board publisher advertise?
 
-What services does this peer want?
+What wanted services does this Board publisher advertise?
 
 What does a particular service cost?
 
@@ -165,7 +167,7 @@ Board publisher
 other identities
 ```
 
-If Alice publishes this Board, the entry means:
+If Alice publishes this Board, the provided service means:
 
 ```text
 Alice provides example.weather.current.
@@ -208,7 +210,7 @@ other identities
 Board publisher
 ```
 
-If Alice publishes this Board, the entry means:
+If Alice publishes this Board, the wanted service means:
 
 ```text
 Alice wants another identity to provide this service to Alice.
