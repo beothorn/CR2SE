@@ -30,6 +30,8 @@ Likewise, an implementation may advertise custom services that are not defined b
 
 The Board defines how those services are described in a common, machine-readable form.
 
+The common service model, input and output schemas, type system, service checks, and standard-versus-custom service rules are defined by the [CR2SE Services specification](./Services.md).
+
 ---
 
 ## 1. Board Publisher
@@ -132,13 +134,15 @@ Applications and future CR2SE specifications may define additional services.
 
 The Board therefore treats service descriptions generically.
 
+The normative definition of a service belongs to the CR2SE Services specification. The Board advertises offerings of those services.
+
 ---
 
 ## 5. Provided Services
 
 `providedServices` contains services that the Board publisher is willing to provide to other identities.
 
-For example:
+The following partial example focuses only on service direction and identity; a complete custom offering also contains the contract and payment fields defined later in this document:
 
 ```json
 {
@@ -147,6 +151,7 @@ For example:
     {
       "id": "temperature-default",
       "service": "example.weather.current",
+      "serviceVersion": 1,
       "description": "Returns the current temperature for a location."
     }
   ],
@@ -180,7 +185,7 @@ Whether an invocation is accepted depends on the service, its requirements, the 
 
 `wantedServices` contains services that the Board publisher wants other identities to provide.
 
-For example:
+The following partial example focuses only on service direction and identity; a complete offering also contains the payment fields defined later in this document:
 
 ```json
 {
@@ -190,6 +195,7 @@ For example:
     {
       "id": "storage-1g-10d",
       "service": "cr2se.storage.store",
+      "serviceVersion": 1,
       "description": "Store up to 1 GB for 10 days."
     }
   ]
@@ -247,15 +253,18 @@ For example:
   "providedServices": [
     {
       "id": "store-1g-10d",
-      "service": "cr2se.storage.store"
+      "service": "cr2se.storage.store",
+      "serviceVersion": 1
     },
     {
       "id": "store-1g-30d",
-      "service": "cr2se.storage.store"
+      "service": "cr2se.storage.store",
+      "serviceVersion": 1
     },
     {
       "id": "store-10g-10d",
-      "service": "cr2se.storage.store"
+      "service": "cr2se.storage.store",
+      "serviceVersion": 1
     }
   ]
 }
@@ -264,6 +273,8 @@ For example:
 The service defines the operation.
 
 The offering defines one advertised variant of that operation.
+
+Examples that focus on one Board field may omit other required offering fields for brevity. Such excerpts are not complete offerings unless explicitly described as complete.
 
 ---
 
@@ -290,11 +301,13 @@ For example, this is invalid:
   "providedServices": [
     {
       "id": "storage",
-      "service": "cr2se.storage.store"
+      "service": "cr2se.storage.store",
+      "serviceVersion": 1
     },
     {
       "id": "storage",
-      "service": "cr2se.storage.store"
+      "service": "cr2se.storage.store",
+      "serviceVersion": 1
     }
   ]
 }
@@ -321,19 +334,32 @@ Applications must treat offering IDs as opaque strings and must not derive servi
 
 ---
 
-## 9. Service Identifier
+## 9. Service Identifier and Version
 
-Every offering must contain a `service` field.
+Every offering must contain `service` and `serviceVersion` fields.
 
 For example:
 
 ```json
-"service": "cr2se.storage.store"
+{
+  "service": "cr2se.storage.store",
+  "serviceVersion": 1
+}
 ```
 
 The service identifier describes the operation implemented by the offering.
 
 A service identifier is a non-empty UTF-8 string.
+
+The service version is an unsigned integer greater than zero. It selects an exact version of that service's contract.
+
+The service identifier and version together identify the service:
+
+```text
+(service, serviceVersion)
+```
+
+An implementation must not silently substitute another version when it does not support the advertised version.
 
 The same service identifier may appear in several offerings.
 
@@ -343,11 +369,13 @@ For example:
 [
   {
     "id": "store-small-short",
-    "service": "cr2se.storage.store"
+    "service": "cr2se.storage.store",
+    "serviceVersion": 1
   },
   {
     "id": "store-small-long",
-    "service": "cr2se.storage.store"
+    "service": "cr2se.storage.store",
+    "serviceVersion": 1
   }
 ]
 ```
@@ -358,7 +386,7 @@ A service identifier therefore must not be treated as an offering identifier.
 
 The `id` identifies the particular offering.
 
-The `service` identifies what kind of operation the offering performs.
+The `service` and `serviceVersion` identify the exact operation contract the offering performs.
 
 ---
 
@@ -422,13 +450,15 @@ service discovery interfaces;
 human-readable documentation.
 ```
 
-Programs must not depend on parsing the description to determine service behavior.
+Programs must not parse the description to redefine the behavior of a standard CR2SE service. Machine-readable rules belong in fields defined by the service specification.
 
-Machine-readable service rules belong in fields defined by the service specification.
+For a custom service, the description contributes to making the contract understandable to users and automated agents, but it does not replace the required `input`, `output`, `check`, and service-specific information. An ambiguous custom description makes the offering unsuitable for automatic matching or invocation.
 
 For example, a Storage specification may define machine-readable fields describing storage size and retention period.
 
 The description may explain those terms in more detail for humans.
+
+This offering-level `description` is distinct from the `description` inside an input, output, or check field's type description. Field descriptions explain what individual values mean and are defined by the [CR2SE Services specification](./Services.md).
 
 ---
 
@@ -489,6 +519,7 @@ For example:
     {
       "id": "storage-1g-10d",
       "service": "cr2se.storage.store",
+      "serviceVersion": 1,
       "description": "Store up to 1 GB for 10 days.",
       "info": {
         "maximumBytes": 1000000000,
@@ -498,6 +529,7 @@ For example:
     {
       "id": "storage-1g-30d",
       "service": "cr2se.storage.store",
+      "serviceVersion": 1,
       "description": "Store up to 1 GB for 30 days.",
       "info": {
         "maximumBytes": 1000000000,
@@ -516,7 +548,7 @@ The service specification determines which differences are significant enough to
 
 ## 14. Credits Used for Payment
 
-An offering that requires credit payment uses `creditIssuer` to identify the issuer of the credits used for that offering.
+Every offering must contain `creditIssuer` to identify the issuer of the credits used for that offering.
 
 For example:
 
@@ -559,6 +591,7 @@ Suppose Alice publishes:
 {
   "id": "weather",
   "service": "example.weather.current",
+  "serviceVersion": 1,
   "creditIssuer": "ALICE_ID",
   "price": 2
 }
@@ -609,6 +642,7 @@ Suppose Alice publishes:
 {
   "id": "storage",
   "service": "cr2se.storage.store",
+  "serviceVersion": 1,
   "creditIssuer": "ALICE_ID",
   "price": 5
 }
@@ -638,7 +672,7 @@ How Alice obtained those Bob credits is a Ledger concern and does not affect the
 
 ## 17. Price
 
-An offering that has a fixed advertised credit price contains a `price`.
+Every offering must contain a fixed advertised credit `price`.
 
 For example:
 
@@ -668,7 +702,7 @@ The `price` value is an unsigned 64-bit integer.
 Its valid range is:
 
 ```text
-0 .. 18446744073709551615
+1 .. 18446744073709551615
 ```
 
 This uses the same credit amount representation defined by the Ledger specification.
@@ -685,24 +719,19 @@ are invalid CR2SE credit prices.
 
 ---
 
-## 18. Zero Price
+## 18. Minimum Price
 
-A price of zero is valid.
+The minimum CR2SE service price is:
 
-For example:
-
-```json
-{
-  "creditIssuer": "ALICE_ID",
-  "price": 0
-}
+```text
+1 credit
 ```
 
-describes a service that currently requires no credit payment.
+A price of zero is invalid.
 
-A service may therefore be exposed through the same Board mechanism whether it is paid or free.
+This remains true when the identities have maximum trust in each other or are controlled by the same operator. Requiring a nonzero price is an anti-abuse property of CR2SE.
 
-A service specification or implementation may still impose non-credit requirements.
+Identities that want effectively unrestricted cooperation may issue each other sufficiently large credit balances. They must still use service offerings priced at one credit or more.
 
 ---
 
@@ -716,6 +745,7 @@ For example:
 {
   "id": "storage-1g-10d",
   "service": "cr2se.storage.store",
+  "serviceVersion": 1,
   "creditIssuer": "ALICE_ID",
   "price": 5,
   "description": "Store up to 1 GB for 10 days."
@@ -751,6 +781,7 @@ For example:
   {
     "id": "storage-1g-10d",
     "service": "cr2se.storage.store",
+    "serviceVersion": 1,
     "creditIssuer": "ALICE_ID",
     "price": 5,
     "info": {
@@ -761,6 +792,7 @@ For example:
   {
     "id": "storage-1g-30d",
     "service": "cr2se.storage.store",
+    "serviceVersion": 1,
     "creditIssuer": "ALICE_ID",
     "price": 12,
     "info": {
@@ -777,508 +809,99 @@ The Board only provides the common mechanism for advertising the variants.
 
 ---
 
-## 20. Services Without a Board Price
+## 20. Price Must Be Known From the Board
 
-Some future services may require pricing behavior that cannot reasonably be represented by one fixed Board price.
+The Board price is fixed for the complete offering described by that entry.
 
-For example, a service could determine its final cost from work performed during the operation.
+An offering must not omit `price` and determine an unbounded final cost after execution. If a service needs several resource levels or cost choices, the Board publisher must advertise separate offerings with fixed prices or define a bounded unit of work as one invocation.
 
-Such behavior must be defined by the specification of that service.
-
-The Board must not invent implicit pricing formulas from arbitrary service metadata.
-
-If `price` is absent, the service specification must define how the cost becomes known before credits are committed.
-
-This is consistent with the Ledger requirement that a cost must be known before a credit-charging operation is committed.
-
-Implementations should prefer fixed-price offerings where practical because they are simpler to discover, compare, and reason about.
+The selected price and credit issuer must be known and accepted before execution begins. If a cached Board is stale and the provider no longer accepts its advertised terms, the provider must reject the invocation rather than execute it at an undisclosed price.
 
 ---
 
-## 21. Input Schema
+## 21. Service Contracts and Schemas
 
-An offering may contain an `input` field.
+The CR2SE Services specification defines:
 
-The `input` field describes the logical input accepted by the service.
+```text
+service identifiers and versions;
+standard and custom services;
+input and output schemas;
+the CR2SE type vocabulary;
+service checks;
+service completion and charging.
+```
 
-It does not contain the input of a particular invocation.
+An offering uses `input`, `output`, and `check` according to the [CR2SE Services specification](./Services.md). These fields describe the logical contract. They do not contain the values of a particular invocation or check.
 
-For example:
+A standard service offering may omit these fields because its `service` and `serviceVersion` identify a contract defined by a CR2SE specification. If the fields are present, they must agree with that standard contract and must not redefine it.
+
+A custom service offering must contain `input`, `output`, and `check`. Its description and service-specific `info` must make the operation and its requirements understandable from the Board itself. An external specification may add detail but must not be required merely to determine the contract.
+
+Every named field in a custom service's input, output, and check schemas must contain a non-empty `description`, including fields in nested objects. The type defines the value's shape; the field description defines its meaning. A complete wanted offering must be clear enough that an unfamiliar implementation, including an AI-assisted implementation, can implement it using only the Board entry.
+
+Two offerings with the same `service` and `serviceVersion` must use the same logical input, output, success, failure, and check definitions. Offering-specific terms such as capacity, duration, price, and preconditions may differ.
+
+Unknown schema types do not make the complete Board invalid, but an implementation must not claim to understand or invoke an offering whose contract it cannot interpret.
+
+---
+
+## 22. Checks and Check Price
+
+Every service has a check, as defined by the [CR2SE Services specification](./Services.md) and by the specification of that service.
+
+Performing a check is optional. Providing the defined check mechanism is mandatory.
+
+A check may be included in the main offering price or separately priced. An offering may contain:
+
+```json
+"checkPrice": 1
+```
+
+`checkPrice` uses the same credits identified by the offering's `creditIssuer`.
+
+If `checkPrice` is absent, the required check is included in the main service price and has no additional charge. It is part of the already purchased service, not a free offering. The service contract defines how many included checks may be requested and any time or frequency limit.
+
+If `checkPrice` is present, it is the fixed price of one check invocation and must be an unsigned 64-bit integer in the range:
+
+```text
+1 .. 18446744073709551615
+```
+
+The requester must know and accept a separate check price before initiating that check.
+
+---
+
+## 23. Implementation Suggestions
+
+A custom offering may contain `implementationSuggestions`.
+
+This is an array of objects containing non-normative information that may help a provider implement the service. For example:
 
 ```json
 {
-  "input": {
-    "type": "object",
-    "fields": {
-      "location": {
-        "type": "string"
-      }
+  "implementationSuggestions": [
+    {
+      "name": "Example Processor",
+      "version": "2.1",
+      "uri": "https://example.invalid/processor",
+      "description": "One implementation known to produce the required output."
     }
-  }
+  ]
 }
 ```
 
-means conceptually:
+Each suggestion must contain a non-empty `name`. `version`, `uri`, and `description` are optional UTF-8 strings.
 
-```text
-input:
-    location: string
-```
+Suggestions do not change the service contract. A provider may use another implementation that produces the required behavior.
 
-An actual invocation might later contain:
+Implementations must treat these values as untrusted metadata. Reading a Board must not automatically download, install, or execute suggested software.
 
-```text
-location = "Berlin"
-```
-
-The Board describes the interface.
-
-The invocation carries the value.
+This field is particularly useful for wanted custom services, but it may appear in either wanted or provided offerings.
 
 ---
 
-## 22. Output Schema
-
-An offering may contain an `output` field.
-
-The `output` field describes the logical result produced by the service.
-
-For example:
-
-```json
-{
-  "output": {
-    "type": "object",
-    "fields": {
-      "temperature": {
-        "type": "int32"
-      }
-    }
-  }
-}
-```
-
-means conceptually:
-
-```text
-output:
-    temperature: int32
-```
-
-The Board does not contain the actual result.
-
----
-
-## 23. Type Descriptions
-
-CR2SE version 1 defines a small language-independent type vocabulary for Board input and output schemas.
-
-The primitive types are:
-
-```text
-bool
-int32
-int64
-uint32
-uint64
-float
-double
-string
-bytes
-```
-
-The composite types are:
-
-```text
-object
-array
-```
-
-These types describe logical values.
-
-They do not define how those values must be represented internally by an implementation.
-
-For example:
-
-```text
-uint64
-```
-
-may map to different native language types in C, Rust, Java, Python, or another implementation language.
-
----
-
-## 24. `bool`
-
-`bool` represents a boolean value.
-
-Its logical values are:
-
-```text
-true
-false
-```
-
-Example:
-
-```json
-{
-  "type": "bool"
-}
-```
-
----
-
-## 25. `int32`
-
-`int32` represents a signed 32-bit integer.
-
-Its range is:
-
-```text
--2147483648 .. 2147483647
-```
-
-Example:
-
-```json
-{
-  "type": "int32"
-}
-```
-
----
-
-## 26. `int64`
-
-`int64` represents a signed 64-bit integer.
-
-Its range is:
-
-```text
--9223372036854775808 .. 9223372036854775807
-```
-
-Example:
-
-```json
-{
-  "type": "int64"
-}
-```
-
----
-
-## 27. `uint32`
-
-`uint32` represents an unsigned 32-bit integer.
-
-Its range is:
-
-```text
-0 .. 4294967295
-```
-
-Example:
-
-```json
-{
-  "type": "uint32"
-}
-```
-
----
-
-## 28. `uint64`
-
-`uint64` represents an unsigned 64-bit integer.
-
-Its range is:
-
-```text
-0 .. 18446744073709551615
-```
-
-Example:
-
-```json
-{
-  "type": "uint64"
-}
-```
-
----
-
-## 29. `float`
-
-`float` represents an IEEE 754 binary32 floating-point value.
-
-Example:
-
-```json
-{
-  "type": "float"
-}
-```
-
-The service specification must define whether special values such as infinity or NaN are meaningful if they may occur.
-
----
-
-## 30. `double`
-
-`double` represents an IEEE 754 binary64 floating-point value.
-
-Example:
-
-```json
-{
-  "type": "double"
-}
-```
-
-The service specification must define whether special values such as infinity or NaN are meaningful if they may occur.
-
----
-
-## 31. `string`
-
-`string` represents Unicode text.
-
-Example:
-
-```json
-{
-  "type": "string"
-}
-```
-
-When represented as JSON, the value follows the JSON string rules.
-
----
-
-## 32. `bytes`
-
-`bytes` represents an arbitrary sequence of bytes.
-
-Example:
-
-```json
-{
-  "type": "bytes"
-}
-```
-
-The type does not imply that the actual bytes must be embedded directly in JSON.
-
-For example, a storage service could logically accept:
-
-```text
-data: bytes
-```
-
-where the data is several gigabytes in size.
-
-The Board describes the logical service interface.
-
-The protocol used to invoke the service determines how the actual byte sequence is transported.
-
-Large binary values may therefore be streamed through CR2SE network frames rather than encoded as one large JSON value.
-
-The Board schema must not be interpreted as requiring large resources to fit in memory or to be Base64-encoded into a JSON document.
-
----
-
-## 33. Object Type
-
-An object contains named fields.
-
-Example:
-
-```json
-{
-  "type": "object",
-  "fields": {
-    "chunkId": {
-      "type": "string"
-    },
-    "data": {
-      "type": "bytes"
-    }
-  }
-}
-```
-
-This describes:
-
-```text
-object
-    chunkId: string
-    data: bytes
-```
-
-`fields` must be a JSON object.
-
-Each property name is a field name.
-
-Each property value is another CR2SE type description.
-
-Objects may therefore be nested.
-
-For example:
-
-```json
-{
-  "type": "object",
-  "fields": {
-    "location": {
-      "type": "object",
-      "fields": {
-        "latitude": {
-          "type": "double"
-        },
-        "longitude": {
-          "type": "double"
-        }
-      }
-    }
-  }
-}
-```
-
----
-
-## 34. Array Type
-
-An array contains zero or more values described by one item schema.
-
-Example:
-
-```json
-{
-  "type": "array",
-  "items": {
-    "type": "string"
-  }
-}
-```
-
-This describes:
-
-```text
-array of string
-```
-
-Arrays may contain objects.
-
-For example:
-
-```json
-{
-  "type": "array",
-  "items": {
-    "type": "object",
-    "fields": {
-      "id": {
-        "type": "string"
-      },
-      "size": {
-        "type": "uint64"
-      }
-    }
-  }
-}
-```
-
-Composite types may be nested to arbitrary practical depth.
-
-Implementations should enforce reasonable nesting limits when parsing untrusted Boards.
-
-The exact limit is implementation-dependent.
-
----
-
-## 35. Optional Fields
-
-Object fields are required by default.
-
-A field may contain:
-
-```json
-"optional": true
-```
-
-to indicate that it may be omitted.
-
-For example:
-
-```json
-{
-  "type": "object",
-  "fields": {
-    "query": {
-      "type": "string"
-    },
-    "limit": {
-      "type": "uint32",
-      "optional": true
-    }
-  }
-}
-```
-
-means:
-
-```text
-query is required.
-
-limit is optional.
-```
-
-The value:
-
-```json
-"optional": false
-```
-
-has the same meaning as omitting `optional`.
-
-`optional` applies to a field within an object.
-
----
-
-## 36. Schema and Wire Encoding
-
-Board schemas describe logical service values.
-
-They do not define the peer-to-peer wire encoding used to transport every service input or result.
-
-For example:
-
-```text
-input:
-    document: bytes
-```
-
-describes what the service consumes.
-
-It does not require:
-
-```text
-JSON;
-Protocol Buffers;
-CBOR;
-one CR2SE frame;
-one in-memory byte array.
-```
-
-The service invocation mechanism and the service specification determine how actual values are transmitted.
-
-This separation is important because the same Board schema must be usable for both small values and very large streamed resources.
-
----
-
-## 37. Preconditions
+## 24. Preconditions
 
 An offering may contain a `preconditions` array.
 
@@ -1317,7 +940,7 @@ The meaning and verification procedure of a precondition must be defined by the 
 
 ---
 
-## 38. Identity Preconditions
+## 25. Identity Preconditions
 
 A service that requires the remote participant to prove control of a CR2SE identity may advertise the standard identity precondition:
 
@@ -1333,7 +956,7 @@ It only declares that successful identity proof is required by the offering.
 
 ---
 
-## 39. Multiple Preconditions
+## 26. Multiple Preconditions
 
 An offering may require several preconditions.
 
@@ -1358,7 +981,7 @@ They may, however, make that particular offering unusable by an implementation t
 
 ---
 
-## 40. Offering Example
+## 27. Offering Example
 
 A complete offering could look like:
 
@@ -1366,6 +989,7 @@ A complete offering could look like:
 {
   "id": "weather-current",
   "service": "example.weather.current",
+  "serviceVersion": 1,
   "description": "Returns the current temperature for a location.",
   "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
   "price": 1,
@@ -1376,7 +1000,8 @@ A complete offering could look like:
     "type": "object",
     "fields": {
       "location": {
-        "type": "string"
+        "type": "string",
+        "description": "Location whose current temperature is requested."
       }
     }
   },
@@ -1384,7 +1009,24 @@ A complete offering could look like:
     "type": "object",
     "fields": {
       "temperatureCelsius": {
-        "type": "int32"
+        "type": "int32",
+        "description": "Current temperature in whole degrees Celsius."
+      }
+    }
+  },
+  "check": {
+    "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
+    "input": {
+      "type": "object",
+      "fields": {}
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": {
+          "type": "string",
+          "description": "Verification outcome: pass, fail, or inconclusive."
+        }
       }
     }
   }
@@ -1398,6 +1040,8 @@ the offering identifier;
 
 the service identifier;
 
+the service version;
+
 the human-readable description;
 
 which credits are used;
@@ -1408,14 +1052,16 @@ the required preconditions;
 
 the logical input;
 
-the logical output.
+the logical output;
+
+the available check.
 ```
 
 The Board does not need to know how the weather service obtains temperature information.
 
 ---
 
-## 41. Storage Example
+## 28. Storage Example
 
 The following is illustrative.
 
@@ -1425,6 +1071,7 @@ The exact storage fields and semantics belong to `Storage.md`.
 {
   "id": "store-1g-10d",
   "service": "cr2se.storage.store",
+  "serviceVersion": 1,
   "description": "Store up to 1 GB for 10 days.",
   "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
   "price": 5,
@@ -1463,6 +1110,7 @@ Another storage variant may be:
 {
   "id": "store-1g-30d",
   "service": "cr2se.storage.store",
+  "serviceVersion": 1,
   "description": "Store up to 1 GB for 30 days.",
   "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
   "price": 12,
@@ -1491,7 +1139,7 @@ unless a particular service specification explicitly introduces such information
 
 ---
 
-## 42. Complete Board Example
+## 29. Complete Board Example
 
 A Board may contain both wanted and provided services.
 
@@ -1505,6 +1153,7 @@ For example:
     {
       "id": "temperature-current",
       "service": "example.weather.current",
+      "serviceVersion": 1,
       "description": "Returns the current temperature.",
       "creditIssuer": "ALICE_ID",
       "price": 1,
@@ -1512,7 +1161,8 @@ For example:
         "type": "object",
         "fields": {
           "location": {
-            "type": "string"
+            "type": "string",
+            "description": "Location whose current temperature is requested."
           }
         }
       },
@@ -1520,7 +1170,24 @@ For example:
         "type": "object",
         "fields": {
           "temperatureCelsius": {
-            "type": "int32"
+            "type": "int32",
+            "description": "Current temperature in whole degrees Celsius."
+          }
+        }
+      },
+      "check": {
+        "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
+        "input": {
+          "type": "object",
+          "fields": {}
+        },
+        "output": {
+          "type": "object",
+          "fields": {
+            "outcome": {
+              "type": "string",
+              "description": "Verification outcome: pass, fail, or inconclusive."
+            }
           }
         }
       }
@@ -1531,6 +1198,7 @@ For example:
     {
       "id": "storage-1g-10d",
       "service": "cr2se.storage.store",
+      "serviceVersion": 1,
       "description": "Store up to 1 GB for 10 days.",
       "creditIssuer": "ALICE_ID",
       "price": 5,
@@ -1580,7 +1248,7 @@ Wanted:
 
 ---
 
-## 43. Board State
+## 30. Board State
 
 A Board describes the services and terms currently advertised by its publisher.
 
@@ -1603,7 +1271,7 @@ How often Boards are refreshed or cached is implementation-dependent.
 
 ---
 
-## 44. Offering Removal
+## 31. Offering Removal
 
 If an offering previously existed and no longer appears on a newly retrieved Board, it is no longer advertised by that Board.
 
@@ -1640,7 +1308,7 @@ The current Board is the current advertised set.
 
 ---
 
-## 45. Offering Changes
+## 32. Offering Changes
 
 Because offering IDs identify advertised variants, an implementation should avoid silently changing the fundamental meaning of an offering while retaining the same ID.
 
@@ -1664,7 +1332,7 @@ Minor descriptive changes do not require a new ID.
 
 ---
 
-## 46. Unknown Fields
+## 33. Unknown Fields
 
 A version 1 implementation must tolerate fields it does not understand.
 
@@ -1674,6 +1342,7 @@ For example:
 {
   "id": "example",
   "service": "example.operation",
+  "serviceVersion": 1,
   "futureField": {
     "something": true
   }
@@ -1695,7 +1364,7 @@ An implementation may preserve unknown fields when passing Board JSON to applica
 
 ---
 
-## 47. Unknown Services
+## 34. Unknown Services
 
 A Board may contain a service identifier unknown to the receiving node.
 
@@ -1703,7 +1372,8 @@ For example:
 
 ```json
 {
-  "service": "someone.newService"
+  "service": "someone.newService",
+  "serviceVersion": 1
 }
 ```
 
@@ -1722,9 +1392,9 @@ The core CR2SE implementation does not need built-in knowledge of every advertis
 
 ---
 
-## 48. Unknown Types
+## 35. Unknown Types
 
-If an offering uses an input or output type an implementation does not understand, the complete Board remains readable.
+If an offering uses an input, output, or check type an implementation does not understand, the complete Board remains readable.
 
 However, the implementation must not pretend that it understands how to construct or validate values of that type.
 
@@ -1734,7 +1404,7 @@ Standard CR2SE services should use the standard type vocabulary unless their spe
 
 ---
 
-## 49. Unknown Preconditions
+## 36. Unknown Preconditions
 
 Unknown preconditions behave similarly.
 
@@ -1746,7 +1416,7 @@ This prevents extension compatibility from accidentally removing access requirem
 
 ---
 
-## 50. Board and Ledger
+## 37. Board and Ledger
 
 The Board and Ledger solve different problems.
 
@@ -1794,7 +1464,7 @@ The Ledger determines Bob's local economic state relative to the credit issuer.
 
 ---
 
-## 51. Board and Identity
+## 38. Board and Identity
 
 The Board uses CR2SE identities where identities are required.
 
@@ -1812,7 +1482,7 @@ Those concepts are defined by the CR2SE Identity and Encryption specifications.
 
 ---
 
-## 52. Board and Network
+## 39. Board and Network
 
 The Board is independent of TCP connection identity.
 
@@ -1837,7 +1507,7 @@ A Board service may use CR2SE streams to carry its invocation and result.
 
 ---
 
-## 53. Board and Node API
+## 40. Board and Node API
 
 The Node API provides local applications with operations for interacting with a CR2SE node.
 
@@ -1861,7 +1531,7 @@ These are separate layers.
 
 ---
 
-## 54. Selecting an Offering
+## 41. Selecting an Offering
 
 An application may select an offering using information from the Board.
 
@@ -1899,7 +1569,7 @@ CR2SE does not require one universal algorithm for choosing between offerings.
 
 ---
 
-## 55. Matching Wanted and Provided Services
+## 42. Matching Wanted and Provided Services
 
 Wanted and provided services may be used for discovery.
 
@@ -1920,7 +1590,9 @@ Matching the service identifier alone does not necessarily mean the offerings ar
 Applications may also need to compare:
 
 ```text
+service version;
 input and output schemas;
+check definition and check price;
 service-specific info;
 price;
 credit issuer;
@@ -1932,7 +1604,7 @@ The algorithm used to search for compatible offerings is implementation-dependen
 
 ---
 
-## 56. Board Validation
+## 43. Board Validation
 
 A version 1 Board is structurally valid when:
 
@@ -1949,6 +1621,18 @@ offering IDs are unique within the Board;
 
 every offering has a non-empty service identifier;
 
+every offering has a positive serviceVersion;
+
+every offering has a valid creditIssuer;
+
+every offering has a price of at least one credit;
+
+checkPrice, when present, is at least one credit;
+
+every custom offering has a description, input, output, and check;
+
+every named input, output, and check field in a custom offering has a non-empty description;
+
 standard fields use the types required by this specification.
 ```
 
@@ -1960,7 +1644,7 @@ This is recommended because Boards are extensible and one malformed custom offer
 
 ---
 
-## 57. Untrusted Input
+## 44. Untrusted Input
 
 Boards received from peers are untrusted input.
 
@@ -1990,7 +1674,7 @@ A malformed Board must not cause memory corruption, integer overflow, uncontroll
 
 ---
 
-## 58. Board Size
+## 45. Board Size
 
 CR2SE does not require implementations to accept arbitrarily large Boards.
 
@@ -2006,7 +1690,7 @@ The Board describes services and schemas, not the data exchanged through those s
 
 ---
 
-## 59. Ordering
+## 46. Ordering
 
 The order of offerings inside:
 
@@ -2045,7 +1729,7 @@ Applications must not derive economic or semantic priority solely from array pos
 
 ---
 
-## 60. Duplicate Services
+## 47. Duplicate Services
 
 Several offerings may use the same service identifier.
 
@@ -2057,11 +1741,13 @@ For example:
 [
   {
     "id": "small",
-    "service": "example.compute"
+    "service": "example.compute",
+    "serviceVersion": 1
   },
   {
     "id": "large",
-    "service": "example.compute"
+    "service": "example.compute",
+    "serviceVersion": 1
   }
 ]
 ```
@@ -2072,7 +1758,7 @@ A service invocation mechanism should therefore identify the offering being invo
 
 ---
 
-## 61. Empty Boards
+## 48. Empty Boards
 
 A Board may contain no offerings.
 
@@ -2092,7 +1778,7 @@ It represents an identity that currently advertises no provided or wanted servic
 
 ---
 
-## 62. Example Interaction
+## 49. Example Interaction
 
 Suppose Alice publishes:
 
@@ -2103,13 +1789,16 @@ Suppose Alice publishes:
     {
       "id": "temperature",
       "service": "example.weather.current",
+      "serviceVersion": 1,
+      "description": "Returns the current temperature in whole degrees Celsius using the provider's configured observation source.",
       "creditIssuer": "ALICE_ID",
       "price": 1,
       "input": {
         "type": "object",
         "fields": {
           "location": {
-            "type": "string"
+            "type": "string",
+            "description": "Location whose current temperature is requested."
           }
         }
       },
@@ -2117,7 +1806,24 @@ Suppose Alice publishes:
         "type": "object",
         "fields": {
           "temperatureCelsius": {
-            "type": "int32"
+            "type": "int32",
+            "description": "Current temperature in whole degrees Celsius."
+          }
+        }
+      },
+      "check": {
+        "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
+        "input": {
+          "type": "object",
+          "fields": {}
+        },
+        "output": {
+          "type": "object",
+          "fields": {
+            "outcome": {
+              "type": "string",
+              "description": "Verification outcome: pass, fail, or inconclusive."
+            }
           }
         }
       }
@@ -2138,6 +1844,9 @@ Offering ID:
 Service:
     example.weather.current
 
+Service version:
+    1
+
 Price:
     1 Alice credit
 
@@ -2146,6 +1855,9 @@ Input:
 
 Output:
     temperatureCelsius: int32
+
+Check:
+    repeat the observation, producing pass, fail, or inconclusive
 ```
 
 Bob's application may then decide to invoke:
@@ -2193,26 +1905,35 @@ id
     identifies the particular advertised offering;
 
 service
-    identifies the logical operation.
+    identifies the logical operation;
+
+serviceVersion
+    identifies the exact contract version;
+
+creditIssuer
+    identifies the credits used for payment;
+
+price
+    is a fixed integer price of at least one credit.
 ```
 
 An offering may additionally describe:
 
 ```text
 description;
-credit issuer;
-fixed integer credit price;
 service-specific information;
 preconditions;
-input schema;
-output schema.
+separate check price;
+implementation suggestions.
 ```
+
+Custom offerings additionally contain the input schema, output schema, and check definition required by the Services specification. Every named field has a semantic description so, in particular, a requested custom operation can be implemented from the Board alone. Standard offerings may omit those definitions because the service identifier and version refer to a CR2SE standard.
 
 Different service terms or prices should normally be represented as different offerings.
 
 Credits use the unsigned 64-bit integer model defined by the Ledger.
 
-Input and output schemas use a language-independent logical type system inspired by RPC interface descriptions.
+Input, output, and check schemas use the language-independent logical type system defined by the [CR2SE Services specification](./Services.md).
 
 The Board describes the logical interface of a service.
 

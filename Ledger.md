@@ -1068,7 +1068,7 @@ This is a deliberate CR2SE design choice.
 
 A new identity is not automatically granted access to services merely because it can establish a valid cryptographic identity.
 
-A trust score of zero means that the local peer must not provide a paid CR2SE service to that identity.
+A trust score of zero means that the local peer must not provide a CR2SE service to that identity.
 
 Conceptually:
 
@@ -1291,13 +1291,13 @@ Trust affects the conditions under which peers exchange resources.
 
 It does not eliminate the exchange.
 
-Therefore, a pricing policy should maintain:
+Every CR2SE service offering must maintain:
 
 ```text
-price > 0
+price >= 1 credit
 ```
 
-for services that normally require credits.
+This is a protocol requirement, not merely a pricing recommendation.
 
 A trust score of one represents the lowest trust-related risk adjustment, not an obligation to provide resources for free.
 
@@ -1672,7 +1672,7 @@ Alice:
     trust:          0
 ```
 
-Because trust is zero, neither should begin by providing a paid service to the other merely because the other requested one.
+Because trust is zero, neither should begin by providing a CR2SE service to the other merely because the other requested one.
 
 Suppose Bob first provides Alice with a useful resource.
 

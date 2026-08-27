@@ -788,12 +788,13 @@ Example response:
 {
   "id": "5",
   "ok": true,
-  "result": {
-    "board": {
-      "meta": {},
-      "offerings": []
-    }
-  }
+      "result": {
+        "board": {
+          "version": 1,
+          "providedServices": [],
+          "wantedServices": []
+        }
+      }
 }
 ```
 
@@ -847,19 +848,29 @@ Application
 
 ## 24. Service Identification
 
-An offering in a peer's board must provide enough information to identify the service that may be invoked.
+An offering in a peer's Board provides three identifiers relevant to invocation:
 
-The exact offering schema and service naming rules are defined by the board/service specification.
+```text
+offering ID
+service identifier
+service version
+```
 
-For the Node API, a service identifier is treated as an opaque string.
+Their exact meaning is defined by the Board and Services specifications.
 
 For example:
 
 ```json
-"service": "weather.current"
+{
+  "offering_id": "weather-current",
+  "service": "example.weather.current",
+  "service_version": 1
+}
 ```
 
-CR2SE does not assign semantic meaning to arbitrary service names.
+The offering ID and service identifier are treated as opaque strings by the Node API. The version is a positive integer.
+
+All three values are supplied so the remote peer can reject a stale or inconsistent selection. An invocation must not select only a service identifier because one Board may advertise several offerings of the same service version with different terms.
 
 ---
 
@@ -874,12 +885,16 @@ Example:
   "id": "6",
   "operation": "service.invoke",
   "connection_id": "7f90c317",
-  "service": "weather.current",
+  "offering_id": "weather-current",
+  "service": "example.weather.current",
+  "service_version": 1,
   "arguments": {
     "location": "New York"
   }
 }
 ```
+
+The selected offering determines the credit issuer, price, preconditions, and service contract. The remote peer must reject the invocation if those identifiers do not select the same currently advertised offering.
 
 The `arguments` field may contain any valid JSON value accepted by that service.
 
@@ -1311,13 +1326,13 @@ The application asks the remote node for its board:
 The node performs the corresponding CR2SE peer communication and returns:
 
 ```json
-{"id":"3","ok":true,"result":{"board":{"meta":{},"offerings":[]}}}
+{"id":"3","ok":true,"result":{"board":{"version":1,"providedServices":[],"wantedServices":[]}}}
 ```
 
 After inspecting the board, the application invokes one of its services:
 
 ```json
-{"id":"4","operation":"service.invoke","connection_id":"7f90c317","service":"weather.current","arguments":{"location":"New York"}}
+{"id":"4","operation":"service.invoke","connection_id":"7f90c317","offering_id":"weather-current","service":"example.weather.current","service_version":1,"arguments":{"location":"New York"}}
 ```
 
 The local CR2SE node sends the service request to the connected peer.
