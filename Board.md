@@ -15,10 +15,6 @@ What does a particular service cost?
 
 Which credit is used for payment?
 
-What input does the service accept?
-
-What output does the service produce?
-
 What conditions must be satisfied before the service may be invoked?
 ```
 
@@ -28,7 +24,7 @@ For example, the Board may advertise a storage service, but the rules governing 
 
 Likewise, an implementation may advertise custom services that are not defined by CR2SE.
 
-The Board defines how those services are described in a common, machine-readable form.
+The Board provides a compact, machine-readable summary of those services. Detailed service definitions are retrieved separately using the service's Board `id`.
 
 The common service model, input and output schemas, type system, service checks, and standard-versus-custom service rules are defined by the [CR2SE Services specification](./Services.md).
 
@@ -142,7 +138,7 @@ The normative definition of a service belongs to the CR2SE Services specificatio
 
 `providedServices` contains services that the Board publisher is willing to provide to other identities.
 
-The following partial example focuses only on service direction and identity; a complete custom offering also contains the contract and payment fields defined later in this document:
+The following partial example focuses only on service direction and identity; a complete offering also contains the payment fields defined later in this document:
 
 ```json
 {
@@ -430,7 +426,7 @@ Unknown services do not make the Board invalid.
 
 ## 11. Description
 
-An offering may contain a human-readable `description`.
+Every offering must contain a human-readable `description`.
 
 For example:
 
@@ -438,7 +434,7 @@ For example:
 "description": "Store up to 1 GB of data for 10 days."
 ```
 
-The description is a UTF-8 string.
+The description is a non-empty UTF-8 string.
 
 It exists for:
 
@@ -452,13 +448,13 @@ human-readable documentation.
 
 Programs must not parse the description to redefine the behavior of a standard CR2SE service. Machine-readable rules belong in fields defined by the service specification.
 
-For a custom service, the description contributes to making the contract understandable to users and automated agents, but it does not replace the required `input`, `output`, `check`, and service-specific information. An ambiguous custom description makes the offering unsuitable for automatic matching or invocation.
+For a custom service, the description helps users and automated agents decide whether to retrieve its full definition. It does not replace the separately retrievable `input`, `output`, and `check` definitions or service-specific information.
 
 For example, a Storage specification may define machine-readable fields describing storage size and retention period.
 
 The description may explain those terms in more detail for humans.
 
-This offering-level `description` is distinct from the `description` inside an input, output, or check field's type description. Field descriptions explain what individual values mean and are defined by the [CR2SE Services specification](./Services.md).
+This Board-level `description` is a discovery summary. The full service definition returned for the offering repeats that description and contains the descriptions of individual input, output, and check fields. Those field descriptions are defined by the [CR2SE Services specification](./Services.md).
 
 ---
 
@@ -819,30 +815,28 @@ The selected price and credit issuer must be known and accepted before execution
 
 ---
 
-## 21. Service Contracts and Schemas
+## 21. Service Definitions Are Separate
 
-The CR2SE Services specification defines:
+The Board is an index of advertised offerings, not a container for their type definitions. An offering must not contain `input`, `output`, or `check` schemas.
+
+Every advertised offering must have a separately retrievable service definition. A client uses the offering's Board `id` with the `service.get` Node API operation defined in [NodeApi.md](./NodeApi.md). The returned definition contains:
 
 ```text
-service identifiers and versions;
-standard and custom services;
-input and output schemas;
-the CR2SE type vocabulary;
-service checks;
-service completion and charging.
+the offering ID;
+the service identifier and version;
+the full service description;
+the input schema;
+the output schema;
+the check definition.
 ```
 
-An offering uses `input`, `output`, and `check` according to the [CR2SE Services specification](./Services.md). These fields describe the logical contract. They do not contain the values of a particular invocation or check.
+The definition's `id`, `service`, `serviceVersion`, and `description` must match the corresponding Board offering. Repeating these fields lets a client detect a stale or inconsistent response.
 
-A standard service offering may omit these fields because its `service` and `serviceVersion` identify a contract defined by a CR2SE specification. If the fields are present, they must agree with that standard contract and must not redefine it.
+Every named field in the input, output, and check schemas must contain a non-empty `description`, including fields in nested objects. A wanted custom service definition must be clear enough that an unfamiliar implementation, including an AI-assisted implementation, can implement it after retrieving the definition.
 
-A custom service offering must contain `input`, `output`, and `check`. Its description and service-specific `info` must make the operation and its requirements understandable from the Board itself. An external specification may add detail but must not be required merely to determine the contract.
+Two offerings with the same `service` and `serviceVersion` must use the same logical input, output, success, failure, and check definitions. Offering-specific terms such as capacity, duration, price, and preconditions remain on the Board and may differ.
 
-Every named field in a custom service's input, output, and check schemas must contain a non-empty `description`, including fields in nested objects. The type defines the value's shape; the field description defines its meaning. A complete wanted offering must be clear enough that an unfamiliar implementation, including an AI-assisted implementation, can implement it using only the Board entry.
-
-Two offerings with the same `service` and `serviceVersion` must use the same logical input, output, success, failure, and check definitions. Offering-specific terms such as capacity, duration, price, and preconditions may differ.
-
-Unknown schema types do not make the complete Board invalid, but an implementation must not claim to understand or invoke an offering whose contract it cannot interpret.
+A Board remains valid when a definition uses a schema type that the client does not understand. The client may still display the Board summary, but it must not claim to understand or invoke that service definition.
 
 ---
 
@@ -995,41 +989,7 @@ A complete offering could look like:
   "price": 1,
   "preconditions": [
     "cr2se.identity"
-  ],
-  "input": {
-    "type": "object",
-    "fields": {
-      "location": {
-        "type": "string",
-        "description": "Location whose current temperature is requested."
-      }
-    }
-  },
-  "output": {
-    "type": "object",
-    "fields": {
-      "temperatureCelsius": {
-        "type": "int32",
-        "description": "Current temperature in whole degrees Celsius."
-      }
-    }
-  },
-  "check": {
-    "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
-    "input": {
-      "type": "object",
-      "fields": {}
-    },
-    "output": {
-      "type": "object",
-      "fields": {
-        "outcome": {
-          "type": "string",
-          "description": "Verification outcome: pass, fail, or inconclusive."
-        }
-      }
-    }
-  }
+  ]
 }
 ```
 
@@ -1049,15 +1009,9 @@ which credits are used;
 the fixed advertised price;
 
 the required preconditions;
-
-the logical input;
-
-the logical output;
-
-the available check.
 ```
 
-The Board does not need to know how the weather service obtains temperature information.
+The logical input, output, and check are obtained separately with `service.get` using `weather-current`. The Board does not need to know those schemas or how the weather service obtains temperature information.
 
 ---
 
@@ -1081,25 +1035,6 @@ The exact storage fields and semantics belong to `Storage.md`.
   "info": {
     "maximumBytes": 1000000000,
     "periodDays": 10
-  },
-  "input": {
-    "type": "object",
-    "fields": {
-      "chunkId": {
-        "type": "string"
-      },
-      "data": {
-        "type": "bytes"
-      }
-    }
-  },
-  "output": {
-    "type": "object",
-    "fields": {
-      "success": {
-        "type": "bool"
-      }
-    }
   }
 }
 ```
@@ -1156,41 +1091,7 @@ For example:
       "serviceVersion": 1,
       "description": "Returns the current temperature.",
       "creditIssuer": "ALICE_ID",
-      "price": 1,
-      "input": {
-        "type": "object",
-        "fields": {
-          "location": {
-            "type": "string",
-            "description": "Location whose current temperature is requested."
-          }
-        }
-      },
-      "output": {
-        "type": "object",
-        "fields": {
-          "temperatureCelsius": {
-            "type": "int32",
-            "description": "Current temperature in whole degrees Celsius."
-          }
-        }
-      },
-      "check": {
-        "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
-        "input": {
-          "type": "object",
-          "fields": {}
-        },
-        "output": {
-          "type": "object",
-          "fields": {
-            "outcome": {
-              "type": "string",
-              "description": "Verification outcome: pass, fail, or inconclusive."
-            }
-          }
-        }
-      }
+      "price": 1
     }
   ],
 
@@ -1205,25 +1106,6 @@ For example:
       "info": {
         "maximumBytes": 1000000000,
         "periodDays": 10
-      },
-      "input": {
-        "type": "object",
-        "fields": {
-          "chunkId": {
-            "type": "string"
-          },
-          "data": {
-            "type": "bytes"
-          }
-        }
-      },
-      "output": {
-        "type": "object",
-        "fields": {
-          "success": {
-            "type": "bool"
-          }
-        }
       }
     }
   ]
@@ -1356,7 +1238,6 @@ This rule applies to:
 ```text
 the Board object;
 offerings;
-type descriptions;
 service-specific info.
 ```
 
@@ -1392,15 +1273,11 @@ The core CR2SE implementation does not need built-in knowledge of every advertis
 
 ---
 
-## 35. Unknown Types
+## 35. Definitions With Unknown Types
 
-If an offering uses an input, output, or check type an implementation does not understand, the complete Board remains readable.
+Service schemas are not part of the Board. If a separately retrieved service definition uses an input, output, or check type an implementation does not understand, the Board remains readable and the offering remains discoverable.
 
-However, the implementation must not pretend that it understands how to construct or validate values of that type.
-
-Applications that understand an extension may still use it.
-
-Standard CR2SE services should use the standard type vocabulary unless their specification explicitly defines an extension.
+However, the implementation must not pretend that it understands how to construct or validate values of that type. Applications that understand the extension may still use it.
 
 ---
 
@@ -1430,8 +1307,6 @@ what services are provided;
 what credits an offering uses;
 
 what an offering costs;
-
-what data the service consumes and produces.
 ```
 
 The Ledger records:
@@ -1519,13 +1394,21 @@ board.get
 
 which retrieves a remote peer's Board.
 
-The value returned by that operation follows the schema defined by this document.
+The Board value returned by `board.get` follows the schema defined by this document.
 
-Likewise, service invocation through the Node API uses offerings discovered through Boards.
+After discovery, the Node API operation:
+
+```text
+service.get
+```
+
+retrieves the complete definition for one offering using its Board `id`.
+
+Service definition retrieval and invocation through the Node API use offerings discovered through Boards.
 
 The Node API defines the application-to-local-node interface.
 
-The Board defines the service information being discovered.
+The Board defines the compact service information being discovered. The Services specification defines the detailed definition returned separately.
 
 These are separate layers.
 
@@ -1591,8 +1474,9 @@ Applications may also need to compare:
 
 ```text
 service version;
-input and output schemas;
-check definition and check price;
+input and output schemas from the retrieved service definitions;
+check definitions from the retrieved service definitions;
+check price from the Board;
 service-specific info;
 price;
 credit issuer;
@@ -1629,9 +1513,9 @@ every offering has a price of at least one credit;
 
 checkPrice, when present, is at least one credit;
 
-every custom offering has a description, input, output, and check;
+every offering has a non-empty description;
 
-every named input, output, and check field in a custom offering has a non-empty description;
+no offering contains input, output, or check schemas;
 
 standard fields use the types required by this specification.
 ```
@@ -1640,7 +1524,7 @@ An offering containing malformed standard fields must not be interpreted as a va
 
 An implementation may reject only the malformed offering rather than discarding the entire Board when doing so is safe.
 
-This is recommended because Boards are extensible and one malformed custom offering should not unnecessarily hide unrelated valid offerings.
+This is recommended because Boards are extensible and one malformed offering should not unnecessarily hide unrelated valid offerings.
 
 ---
 
@@ -1660,8 +1544,6 @@ extremely large arrays;
 extreme object nesting;
 
 very long strings;
-
-very large schemas;
 
 duplicate identifiers;
 
@@ -1684,9 +1566,9 @@ The exact maximum is implementation-dependent unless a future CR2SE version defi
 
 Nodes should keep Boards reasonably compact.
 
-Large resources themselves must not be embedded in the Board.
+Large resources and service schemas must not be embedded in the Board.
 
-The Board describes services and schemas, not the data exchanged through those services.
+The Board describes service summaries and offering terms, not service type definitions or the data exchanged through services.
 
 ---
 
@@ -1792,41 +1674,7 @@ Suppose Alice publishes:
       "serviceVersion": 1,
       "description": "Returns the current temperature in whole degrees Celsius using the provider's configured observation source.",
       "creditIssuer": "ALICE_ID",
-      "price": 1,
-      "input": {
-        "type": "object",
-        "fields": {
-          "location": {
-            "type": "string",
-            "description": "Location whose current temperature is requested."
-          }
-        }
-      },
-      "output": {
-        "type": "object",
-        "fields": {
-          "temperatureCelsius": {
-            "type": "int32",
-            "description": "Current temperature in whole degrees Celsius."
-          }
-        }
-      },
-      "check": {
-        "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
-        "input": {
-          "type": "object",
-          "fields": {}
-        },
-        "output": {
-          "type": "object",
-          "fields": {
-            "outcome": {
-              "type": "string",
-              "description": "Verification outcome: pass, fail, or inconclusive."
-            }
-          }
-        }
-      }
+      "price": 1
     }
   ],
   "wantedServices": []
@@ -1849,16 +1697,9 @@ Service version:
 
 Price:
     1 Alice credit
-
-Input:
-    location: string
-
-Output:
-    temperatureCelsius: int32
-
-Check:
-    repeat the observation, producing pass, fail, or inconclusive
 ```
+
+The Board is enough for discovery and economic selection. Before invocation, Bob retrieves the definition of offering `temperature` with `service.get`. The definition tells Bob that the input has a described `location` string field, the output has a described `temperatureCelsius` `int32` field, and how the check works.
 
 Bob's application may then decide to invoke:
 
@@ -1880,7 +1721,7 @@ The Ledger handles the corresponding credit relationship.
 
 The service returns the result.
 
-The Board's role was to make the offering discoverable and interpretable before the invocation occurred.
+The Board's role was to make the offering discoverable. The separately retrieved service definition made its typed contract interpretable before invocation.
 
 ---
 
@@ -1917,6 +1758,8 @@ price
     is a fixed integer price of at least one credit.
 ```
 
+Every offering also has a non-empty `description` that summarizes the service for discovery.
+
 An offering may additionally describe:
 
 ```text
@@ -1927,15 +1770,15 @@ separate check price;
 implementation suggestions.
 ```
 
-Custom offerings additionally contain the input schema, output schema, and check definition required by the Services specification. Every named field has a semantic description so, in particular, a requested custom operation can be implemented from the Board alone. Standard offerings may omit those definitions because the service identifier and version refer to a CR2SE standard.
+Boards never contain service input, output, or check schemas. Every advertised offering instead has a definition retrievable by its Board `id` through `service.get`. The definition repeats the service identity and description and contains the typed input, output, and check contracts.
 
 Different service terms or prices should normally be represented as different offerings.
 
 Credits use the unsigned 64-bit integer model defined by the Ledger.
 
-Input, output, and check schemas use the language-independent logical type system defined by the [CR2SE Services specification](./Services.md).
+Input, output, and check schemas in the separate service definition use the language-independent logical type system defined by the [CR2SE Services specification](./Services.md).
 
-The Board describes the logical interface of a service.
+The Board describes service summaries and offering-specific terms. It does not describe the typed interface.
 
 It does not define the internal implementation of the service, the transport of large data, identity cryptography, ledger storage, or service-specific behavior.
 

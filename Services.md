@@ -23,7 +23,7 @@ Page
 
 Applications may also define custom services.
 
-This document defines the common service model, the schema language used to describe service values, and the requirements that apply to standard and custom services. The detailed behavior of each standard service family belongs in that service's own specification.
+This document defines the common service model, the separately retrievable service-definition format, the schema language used to describe service values, and the requirements that apply to standard and custom services. Boards contain compact service summaries and offering terms; they do not contain these type definitions. The detailed behavior of each standard service family belongs in that service's own specification.
 
 ---
 
@@ -143,7 +143,7 @@ the verification procedure;
 the meaning of standard offering information.
 ```
 
-A Board offering may select or constrain terms permitted by the standard service specification. It must not redefine standard behavior.
+A Board offering may select or constrain terms permitted by the standard service specification. Neither the Board nor its separately retrieved definition may redefine standard behavior.
 
 A wanted standard service means that the Board publisher wants the standard operation exactly as specified. A provider must not satisfy it using a different operation that merely has a similar description.
 
@@ -155,7 +155,7 @@ A **custom service** is a service not defined by CR2SE.
 
 Custom services use the same CR2SE service lifecycle and economic rules as standard services, but their behavior is defined by the application or identity publishing them.
 
-A custom service offering must make its contract understandable from the Board itself. It must provide:
+A custom service definition must provide:
 
 ```text
 a service identifier;
@@ -165,16 +165,16 @@ an input schema;
 an output schema;
 a check definition;
 a non-empty description for every named schema field;
-all service-specific terms needed to decide whether to invoke it.
+all semantic contract terms needed to understand and implement it.
 ```
 
-The description and service-specific information must be sufficiently precise to determine what successful performance means. An external document may provide additional detail, but access to an external document must not be required merely to understand the Board offering's input, output, required behavior, or check.
+The definition must be sufficiently precise to determine what successful performance means. An external document may provide additional detail, but access to an external document must not be required merely to understand the retrieved definition's input, output, required behavior, or check.
 
 Custom offerings may include non-normative implementation suggestions. For example, a wanted service may name a program, library, algorithm, container image, or source repository that is known to implement the requested behavior.
 
 An implementation suggestion does not change the contract. A provider may use another implementation if its observable behavior satisfies the advertised contract.
 
-Implementations must treat implementation suggestions as untrusted information. Reading a Board must not automatically download, install, or execute suggested software.
+Implementations must treat implementation suggestions as untrusted information. Reading a Board or service definition must not automatically download, install, or execute suggested software.
 
 ---
 
@@ -190,7 +190,7 @@ example.process
 
 when an unfamiliar provider could not determine what to do.
 
-Its Board entry must describe enough information for a compatible implementation, including an AI-assisted implementation, to determine:
+Its separately retrievable service definition must describe enough information for a compatible implementation, including an AI-assisted implementation, to determine:
 
 ```text
 what input will be supplied;
@@ -202,11 +202,11 @@ how the result may be checked.
 
 Every named field in the input, output, and check schemas of a custom service must have a non-empty `description`. This rule applies recursively to fields inside nested objects and is especially important for wanted custom services.
 
-The type tells an implementation the shape of a value. The description tells it what the value means. Together with the offering description and service-specific information, these descriptions must make the wanted service implementable using only the Board entry.
+The type tells an implementation the shape of a value. The description tells it what the value means. Together with the full service description, these descriptions must make the wanted service implementable from its retrieved definition.
 
 For example, `count: uint32` is not sufficient if the provider cannot determine what is being counted. Its field description must remove that ambiguity.
 
-The following wanted custom offering is self-contained:
+The Board first advertises a compact wanted offering:
 
 ```json
 {
@@ -215,7 +215,18 @@ The following wanted custom offering is self-contained:
   "serviceVersion": 1,
   "description": "Add two unsigned 64-bit integers and return their sum. Return a service failure if the mathematical sum exceeds uint64.",
   "creditIssuer": "ALICE_ID",
-  "price": 1,
+  "price": 1
+}
+```
+
+Retrieving the definition for Board ID `add-two-integers` returns the self-contained typed contract:
+
+```json
+{
+  "id": "add-two-integers",
+  "service": "example.math.add-uint64",
+  "serviceVersion": 1,
+  "description": "Add two unsigned 64-bit integers and return their sum. Return a service failure if the mathematical sum exceeds uint64.",
   "input": {
     "type": "object",
     "fields": {
@@ -257,13 +268,35 @@ The following wanted custom offering is self-contained:
 }
 ```
 
-An implementation does not need prior knowledge of `example.math.add-uint64` to understand this request. The identifier keeps the contract distinct, while the descriptions and schemas make its behavior implementable from the Board.
+An implementation does not need prior knowledge of `example.math.add-uint64` to understand this request. The identifier keeps the contract distinct, while the descriptions and schemas make its behavior implementable after definition retrieval.
 
-If these requirements cannot be made clear from the Board, the wanted custom offering is incomplete and must not be treated as automatically compatible with a provided offering that has the same service identifier.
+If these requirements cannot be made clear in the service definition, the wanted custom offering is incomplete and must not be treated as automatically compatible with a provided offering that has the same service identifier.
 
 ---
 
-## 8. Service Contract
+## 8. Service Definitions
+
+Every Board offering has a service definition that is retrieved separately using the offering's Board `id`. At the Node API boundary this is done with `service.get`.
+
+The definition is a JSON object containing:
+
+```text
+id;
+service;
+serviceVersion;
+description;
+input;
+output;
+check.
+```
+
+The `id`, `service`, `serviceVersion`, and `description` values must exactly match the Board offering used for the lookup. The definition must not contain offering-specific economic terms such as `creditIssuer`, `price`, or `checkPrice`; those remain on the Board.
+
+Separating definitions keeps Boards compact and allows applications to fetch type information only for services they are considering. A publisher must make the definition available for every currently advertised provided or wanted offering.
+
+If an offering is removed or its ID no longer identifies the advertised service, the publisher must reject the lookup. Clients must treat definitions as untrusted and potentially stale data.
+
+### Service Contract
 
 Every service contract defines:
 
@@ -283,7 +316,7 @@ Check
 
 The contract defines logical values and observable behavior. It does not prescribe programming-language classes, function signatures, process layout, internal algorithms, or storage structures unless those choices affect interoperability.
 
-The Board representation uses `input`, `output`, and `check` to carry or identify these parts of the contract.
+The separately retrieved service definition uses `input`, `output`, and `check` to carry these parts of the contract. The Board must not embed them.
 
 ---
 
@@ -353,7 +386,7 @@ output:
     temperatureCelsius: int32
 ```
 
-A successful output must conform to the advertised schema and the service's semantic rules.
+A successful output must conform to the retrieved definition's output schema and the service's semantic rules.
 
 An error message is not a successful output merely because it can be represented by the output schema. Failures must be reported as failures by the service invocation protocol.
 
@@ -399,9 +432,9 @@ A type description may also contain a `description` field:
 
 `description` is a non-empty UTF-8 string explaining the semantic meaning of the value. It does not change the value's type or range.
 
-For custom services, field descriptions are part of the advertised contract. They must not contradict the containing schema, offering description, or other service-specific information. An implementation must not use a description to accept a value that violates its declared type.
+For custom services, field descriptions are part of the retrieved contract. They must not contradict the containing schema, the matching Board description, or other service-specific information. An implementation must not use a description to accept a value that violates its declared type.
 
-Every named field in a custom service's `input`, `output`, and `check` schemas must include a description. Standard services obtain their normative field semantics from their service specification, even when a Board repeats descriptions for convenience.
+Every named field in a service definition's `input`, `output`, and `check` schemas must include a description. For standard services, those descriptions must reflect the normative field semantics in the standard service specification and must not redefine them.
 
 ---
 
@@ -586,7 +619,7 @@ Integer types retain their full specified ranges even when a particular JSON imp
 
 Future specifications or custom services may add fields to a type description.
 
-Unknown schema fields do not make the containing Board invalid. An implementation may ignore an unknown field only when that field is not required to understand or validate the service value.
+Unknown schema fields do not make the service definition invalid. An implementation may ignore an unknown field only when that field is not required to understand or validate the service value.
 
 An unknown `type` value is different. An implementation that does not understand a type must not pretend that it can construct, validate, invoke, or check that contract.
 
@@ -696,7 +729,7 @@ what the check proves;
 known limitations that can make it inconclusive.
 ```
 
-For a custom service, the Board representation of `check` must contain at least:
+For a custom service, the separately retrieved definition of `check` must contain at least:
 
 ```json
 {
@@ -845,7 +878,7 @@ Page
     Compare status, media type, and content bytes or hash.
 
 Custom service
-    Follow the check procedure included in its Board contract.
+    Follow the check procedure included in its retrieved service definition.
     Return pass, fail, or inconclusive.
 ```
 
@@ -871,7 +904,7 @@ preconditions;
 offering-specific information.
 ```
 
-For custom services it also carries the service contract needed to understand the input, output, and check.
+The Board does not carry input, output, or check schemas. A client retrieves them separately by offering ID before it constructs, validates, implements, or invokes an unfamiliar service.
 
 The Board does not execute services and does not decide whether a check passes.
 
@@ -891,7 +924,7 @@ Successful service completion permits the parties to update their corresponding 
 
 The Network layer transports service invocations, streamed values, outputs, and checks between peers.
 
-The Node API exposes logical service operations to local applications.
+The Node API exposes logical service operations to local applications. In particular, `service.get` retrieves a remote service definition by the offering ID discovered on its Board, and `service.invoke` uses the selected offering.
 
 Neither layer changes the service contract. A large `bytes` value remains one logical value even when it is transferred through many bounded frames and exposed to a local application through a streaming mechanism.
 
@@ -901,7 +934,7 @@ Exact peer frame types and the final streaming binding are defined outside this 
 
 ## 30. Untrusted Service Definitions and Values
 
-Boards, schemas, inputs, outputs, check definitions, and check evidence received from peers are untrusted input.
+Boards, service definitions, schemas, inputs, outputs, check definitions, and check evidence received from peers are untrusted input.
 
 Implementations must enforce limits on:
 
@@ -916,7 +949,7 @@ check frequency;
 other service-specific resources.
 ```
 
-Understanding a custom service description does not make its suggested implementation safe. Implementations must not automatically execute arbitrary code, commands, scripts, containers, or downloads merely because a Board recommends them.
+Understanding a custom service description does not make its suggested implementation safe. Implementations must not automatically execute arbitrary code, commands, scripts, containers, or downloads merely because a Board or service definition recommends them.
 
 A valid check result establishes only the service-specific fact defined by that check. It does not establish that the provider, returned content, or suggested software is safe or trustworthy for unrelated purposes.
 
@@ -931,6 +964,7 @@ a non-empty service identifier;
 a positive service version;
 a defined input;
 a defined output;
+a non-empty semantic description for every named input, output, and check field;
 a price of at least one credit;
 a defined check;
 defined success and failure behavior.
@@ -947,9 +981,9 @@ a wanted offering requests that exact standard behavior.
 For custom services:
 
 ```text
-the Board contains enough information to understand the contract;
+the Board contains a compact service summary and offering terms;
+the complete definition is retrieved separately by Board ID;
 the input, output, and check schemas use the CR2SE type system;
-every named field in a custom service has a semantic description;
 implementation suggestions are optional and non-normative.
 ```
 

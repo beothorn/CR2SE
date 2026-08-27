@@ -6,12 +6,12 @@ CR2SE is credits to service protocol. It defines a way for peers to exchange ser
 # Layers
 
 - [Network](./Network.md) - Transport protocol  
-- [NodeApi](./NodeApi.md) - An API to send commands to a CR2SE implementation  
+- [NodeApi](./NodeApi.md) - Commands for boards, service definitions, invocation, and node control
 - [Identity](./Identity.md) - Identification  
 - [Encryption](./Encryption.md) - Signing, encrypting, verifying  
 - [Ledger](./Ledger.md) - Manage credit, debit and trust  
-- [Board](./Board.md) - Service offerings, asking for services, adresses for other peers, meta data  
-- [Services](./Services.md) - Describes what are services
+- [Board](./Board.md) - Compact service offerings, wanted services, payment terms, and metadata
+- [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks
 - Storage - Resource Sharing Service  
 - Computation - Resource Sharing Service  
 - Page - Static HTML Page Hosting Service   

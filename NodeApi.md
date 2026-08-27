@@ -14,6 +14,7 @@ Applications need a standard way to tell a local node to perform operations such
 * list current connections;
 * check whether a connection is responsive;
 * ask a connected node for its board;
+* retrieve the complete definition of a service advertised on that board;
 * invoke a service offered by a connected node.
 
 The Node API defines these operations independently of how a CR2SE implementation is written.
@@ -136,6 +137,8 @@ ping(connection)
 
 get_board(connection)
 
+get_service(connection, offering_id)
+
 invoke_service(connection, service, arguments)
 
 disconnect(connection)
@@ -255,6 +258,12 @@ Client                         CR2SE Node
 ---------------------------------->
 
        board response
+<----------------------------------
+
+       service definition request
+---------------------------------->
+
+       service definition response
 <----------------------------------
 
        service request
@@ -720,13 +729,15 @@ connections.list
 
 can be answered entirely by the local node.
 
-In contrast:
+In contrast, operations such as:
 
 ```text
 board.get
+service.get
+service.invoke
 ```
 
-requires communication with another node.
+require communication with another node.
 
 Conceptually:
 
@@ -808,7 +819,85 @@ The protocol used between peers to request and return the board must be standard
 
 # Services
 
-## 23. Services Are Extensible
+## 23. `service.get`
+
+`service.get` asks a connected node for the complete definition of one service advertised on its Board.
+
+Request:
+
+```json
+{
+  "id": "6",
+  "operation": "service.get",
+  "connection_id": "7f90c317",
+  "offering_id": "weather-current"
+}
+```
+
+`offering_id` is the `id` of an entry in the remote peer's current Board. It is called an offering ID in the Board specification and is the service ID used for this lookup. The request needs only this ID because Board IDs are unique within one Board.
+
+Example response:
+
+```json
+{
+  "id": "6",
+  "ok": true,
+  "result": {
+    "service_definition": {
+      "id": "weather-current",
+      "service": "example.weather.current",
+      "serviceVersion": 1,
+      "description": "Returns the current temperature for a location.",
+      "input": {
+        "type": "object",
+        "fields": {
+          "location": {
+            "type": "string",
+            "description": "Location whose current temperature is requested."
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "fields": {
+          "temperatureCelsius": {
+            "type": "int32",
+            "description": "Current temperature in whole degrees Celsius."
+          }
+        }
+      },
+      "check": {
+        "description": "Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.",
+        "input": {
+          "type": "object",
+          "fields": {}
+        },
+        "output": {
+          "type": "object",
+          "fields": {
+            "outcome": {
+              "type": "string",
+              "description": "Verification outcome: pass, fail, or inconclusive."
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+The value of `service_definition` is the definition specified by [Services.md](./Services.md). Its `id`, service identifier, version, and description must match the current Board entry. Its `input`, `output`, and `check` fields contain the logical types and semantic field descriptions; these fields are never embedded in the Board.
+
+The operation applies to both `providedServices` and `wantedServices`. A publisher must return the definition for every entry on its current Board so an unfamiliar requester or provider can understand the advertised contract.
+
+If `offering_id` is not on the current Board, the operation fails with error code `service_not_found`. A client that receives a definition inconsistent with its cached Board must not use it; it should refresh the Board and repeat selection.
+
+The peer protocol used to retrieve the definition must be standardized separately as part of CR2SE peer communication.
+
+---
+
+## 24. Services Are Extensible
 
 CR2SE must allow nodes to provide services that are not built into the CR2SE specification.
 
@@ -846,7 +935,7 @@ Application
 
 ---
 
-## 24. Service Identification
+## 25. Service Identification
 
 An offering in a peer's Board provides three identifiers relevant to invocation:
 
@@ -874,7 +963,7 @@ All three values are supplied so the remote peer can reject a stale or inconsist
 
 ---
 
-## 25. `service.invoke`
+## 26. `service.invoke`
 
 `service.invoke` asks a connected node to execute one of its advertised services.
 
@@ -894,7 +983,7 @@ Example:
 }
 ```
 
-The selected offering determines the credit issuer, price, preconditions, and service contract. The remote peer must reject the invocation if those identifiers do not select the same currently advertised offering.
+The selected Board offering determines the credit issuer, price, preconditions, and offering-specific terms. Its separately retrieved service definition determines the input, output, and check contract. The remote peer must reject the invocation if those identifiers do not select the same currently advertised offering.
 
 The `arguments` field may contain any valid JSON value accepted by that service.
 
@@ -916,7 +1005,7 @@ The service itself defines them.
 
 ---
 
-## 26. Service Results
+## 27. Service Results
 
 A successful service invocation returns the service result as JSON.
 
@@ -964,11 +1053,11 @@ and:
 ]
 ```
 
-A service must document the structure of its own arguments and result.
+A service's separately retrievable definition must document the structure and semantic meaning of its arguments and result.
 
 ---
 
-## 27. Large Service Results
+## 28. Large Service Results
 
 The JSON Node API is intended primarily for control operations and structured results.
 
@@ -992,7 +1081,7 @@ Define how Node API operations expose:
 
 # Multiple Local Nodes
 
-## 28. Multiple Instances
+## 29. Multiple Instances
 
 A machine may run multiple independent CR2SE nodes simultaneously.
 
@@ -1019,7 +1108,7 @@ CR2SE does not require a machine to have one distinguished or globally canonical
 
 ---
 
-## 29. Endpoint Configuration
+## 30. Endpoint Configuration
 
 An implementation must provide a way to configure the Node API port when starting a standalone node.
 
@@ -1039,7 +1128,7 @@ CR2SE standardizes the resulting behavior, not the user interface used to start 
 
 # Embedded and IPC Equivalence
 
-## 30. Equivalent Semantics
+## 31. Equivalent Semantics
 
 Embedded and IPC access must expose equivalent operations.
 
@@ -1075,7 +1164,7 @@ This rule applies to every standardized Node API operation.
 
 ---
 
-## 31. JSON Is Not Required Internally
+## 32. JSON Is Not Required Internally
 
 An embedded implementation does not need to construct or parse JSON simply to use the Node API internally.
 
@@ -1099,7 +1188,7 @@ This distinction avoids unnecessary serialization when CR2SE is embedded while p
 
 # Extensibility
 
-## 32. Additional Fields
+## 33. Additional Fields
 
 Future CR2SE versions may add fields to requests, responses, connection descriptions, errors, and other JSON objects.
 
@@ -1133,7 +1222,7 @@ must still be able to process the object.
 
 ---
 
-## 33. Unknown Operations
+## 34. Unknown Operations
 
 A node receiving an operation it does not support must return an error.
 
@@ -1163,7 +1252,7 @@ The IPC connection should remain usable after an unknown but otherwise well-form
 
 ---
 
-## 34. Malformed Messages
+## 35. Malformed Messages
 
 If a complete newline-delimited message is not valid JSON, the node cannot reliably obtain a request ID.
 
@@ -1186,7 +1275,7 @@ An implementation may close the connection when continuing would be unsafe, when
 
 ---
 
-## 35. Message Size Limit
+## 36. Message Size Limit
 
 Node API implementations must enforce a configurable maximum JSON message size.
 
@@ -1206,7 +1295,7 @@ Define:
 
 # Security
 
-## 36. Local Does Not Mean Trusted
+## 37. Local Does Not Mean Trusted
 
 The Node API controls a CR2SE node.
 
@@ -1241,7 +1330,7 @@ Until local authentication is defined, Node API servers must bind only to loopba
 
 # Versioning
 
-## 37. Node API Version
+## 38. Node API Version
 
 The Node API must have a version independent from the CR2SE network frame version.
 
@@ -1262,18 +1351,19 @@ Define:
 
 # Initial Operation Registry
 
-## 38. Version 1 Operations
+## 39. Version 1 Operations
 
 The initial Node API defines the following operations:
 
-| Operation          | Scope  | Purpose                                         |
-| ------------------ | ------ | ----------------------------------------------- |
-| `connection.open`  | Local  | Establish a connection to another CR2SE node    |
-| `connections.list` | Local  | List connections maintained by this node        |
-| `connection.close` | Local  | Close an existing CR2SE connection              |
-| `connection.ping`  | Remote | Check communication with a connected peer       |
-| `board.get`        | Remote | Retrieve a connected peer's board               |
-| `service.invoke`   | Remote | Invoke a service advertised by a connected peer |
+| Operation          | Scope  | Purpose                                           |
+| ------------------ | ------ | ------------------------------------------------- |
+| `connection.open`  | Local  | Establish a connection to another CR2SE node      |
+| `connections.list` | Local  | List connections maintained by this node          |
+| `connection.close` | Local  | Close an existing CR2SE connection                |
+| `connection.ping`  | Remote | Check communication with a connected peer         |
+| `board.get`        | Remote | Retrieve a connected peer's board                 |
+| `service.get`      | Remote | Retrieve a definition by its Board offering ID    |
+| `service.invoke`   | Remote | Invoke a service advertised by a connected peer   |
 
 "Local" means the operation can be handled using state owned by the local node.
 
@@ -1283,7 +1373,7 @@ The initial Node API defines the following operations:
 
 # Complete Example
 
-## 39. Example Session
+## 40. Example Session
 
 Assume a CR2SE node exposes its Node API at:
 
@@ -1326,13 +1416,25 @@ The application asks the remote node for its board:
 The node performs the corresponding CR2SE peer communication and returns:
 
 ```json
-{"id":"3","ok":true,"result":{"board":{"version":1,"providedServices":[],"wantedServices":[]}}}
+{"id":"3","ok":true,"result":{"board":{"version":1,"providedServices":[{"id":"weather-current","service":"example.weather.current","serviceVersion":1,"description":"Returns the current temperature for a location.","creditIssuer":"ALICE_ID","price":1}],"wantedServices":[]}}}
 ```
 
-After inspecting the board, the application invokes one of its services:
+After inspecting the Board, the application retrieves that service's complete definition by its Board ID:
 
 ```json
-{"id":"4","operation":"service.invoke","connection_id":"7f90c317","offering_id":"weather-current","service":"example.weather.current","service_version":1,"arguments":{"location":"New York"}}
+{"id":"4","operation":"service.get","connection_id":"7f90c317","offering_id":"weather-current"}
+```
+
+The remote node returns the typed contract separately from the Board:
+
+```json
+{"id":"4","ok":true,"result":{"service_definition":{"id":"weather-current","service":"example.weather.current","serviceVersion":1,"description":"Returns the current temperature for a location.","input":{"type":"object","fields":{"location":{"type":"string","description":"Location whose current temperature is requested."}}},"output":{"type":"object","fields":{"temperatureCelsius":{"type":"int32","description":"Current temperature in whole degrees Celsius."}}},"check":{"description":"Repeat the observation using the same source. Return inconclusive if a comparable observation is unavailable.","input":{"type":"object","fields":{}},"output":{"type":"object","fields":{"outcome":{"type":"string","description":"Verification outcome: pass, fail, or inconclusive."}}}}}}}
+```
+
+After validating the definition against the Board entry, the application invokes the service:
+
+```json
+{"id":"5","operation":"service.invoke","connection_id":"7f90c317","offering_id":"weather-current","service":"example.weather.current","service_version":1,"arguments":{"location":"New York"}}
 ```
 
 The local CR2SE node sends the service request to the connected peer.
@@ -1340,31 +1442,31 @@ The local CR2SE node sends the service request to the connected peer.
 The result is returned through the Node API:
 
 ```json
-{"id":"4","ok":true,"result":{"service_result":{"temperature":21.4,"unit":"celsius"}}}
+{"id":"5","ok":true,"result":{"service_result":{"temperatureCelsius":21}}}
 ```
 
 The application checks the connection:
 
 ```json
-{"id":"5","operation":"connection.ping","connection_id":"7f90c317"}
+{"id":"6","operation":"connection.ping","connection_id":"7f90c317"}
 ```
 
 Response:
 
 ```json
-{"id":"5","ok":true,"result":{"reachable":true}}
+{"id":"6","ok":true,"result":{"reachable":true}}
 ```
 
 Finally:
 
 ```json
-{"id":"6","operation":"connection.close","connection_id":"7f90c317"}
+{"id":"7","operation":"connection.close","connection_id":"7f90c317"}
 ```
 
 Response:
 
 ```json
-{"id":"6","ok":true,"result":{}}
+{"id":"7","ok":true,"result":{}}
 ```
 
 All of these operations occur over the same persistent local Node API connection.
@@ -1397,7 +1499,7 @@ Embedded applications use the same logical operations without requiring IPC or J
 
 Standalone nodes expose the standardized local IPC representation, allowing independently implemented applications to control independently implemented CR2SE nodes.
 
-Remote functionality is exposed through generic operations such as `service.invoke`, so CR2SE nodes may advertise and implement new services without requiring every service to become part of the Node API specification.
+Remote functionality is exposed through generic operations such as `service.get` and `service.invoke`, so CR2SE nodes may advertise, describe, and implement new services without requiring every service to become part of the Node API specification.
 
 The Node API defines how an application asks its local node to perform an operation.
 
