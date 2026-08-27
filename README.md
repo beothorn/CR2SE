@@ -10,7 +10,9 @@ CR2SE is credits to service protocol. It defines a way for peers to exchange ser
 - [Identity](./Identity.md) - Identification  
 - [Encryption](./Encryption.md) - Signing, encrypting, verifying  
 - [Ledger](./Ledger.md) - Manage credit, debit and trust  
-- Board - Service offerings, asking for services, adresses for other peers, meta data  
-- Storage - Resource Sharing  
-- Computation - Resource Sharing  
+- [Board](./Board.md) - Service offerings, asking for services, adresses for other peers, meta data  
+- Storage - Resource Sharing Service  
+- Computation - Resource Sharing Service  
+- Page - Static HTML Page Hosting Service   
+- Discovery - Find peers and services 
 - Configuration - Global configuration  
