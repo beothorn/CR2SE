@@ -18,6 +18,11 @@ CR2SE principles are:
 
 Domain terms have consistent meanings across the specifications and are defined in the [CR2SE Glossary](./Glossary.md).
 
+# Pseudocode
+
+This documentation should guide CR2SE implementations compatible among themselves.  
+Some pseudo-code is defined [here](./pseudoCode/README.md) but just as a guidance.  
+In the end, is up to the implementations to decide how to implement it.
 
 # Components
 
