@@ -1,939 +1,575 @@
-# CR2SE Transfer Protocol
+# CR2SE Network Protocol
 
-CR2SE requires a binary application protocol for persistent, bidirectional communication between peers over TCP.
+CR2SE version 1 is a binary application protocol carried over persistent TCP
+connections. A connection is bidirectional and multiplexes independent logical
+streams. Both nodes authenticate their CR2SE identities during connection
+establishment, and every later frame is protected against modification,
+insertion, and replay within that connection.
 
-The [CR2SE Glossary](./Glossary.md) defines the common meaning of **node**, **peer**, **connection**, **initiator**, and **acceptor** used by this specification.
+This document is the authoritative wire contract. The
+[CR2SE Glossary](./Glossary.md) defines **node**, **peer**, **connection**,
+**initiator**, and **acceptor**. [Identity](./Identity.md) defines CR2SE IDs and
+Ed25519 identities. [Encryption](./Encryption.md) defines the cryptographic
+primitives used here.
 
-It is designed for applications where two connected peers may independently initiate operations and where multiple operations may be active at the same time over the same connection.
-
-Examples include:
-
-- requesting information from another peer;
-- searching for peers or resources;
-- transferring small messages;
-- transferring large files;
-- receiving requests while another request is already being processed.
-
-CR2SE defines the bytes exchanged between peers and their meaning. It is language and platform independent. An implementation may therefore be written in Rust, C, Java, or any other language capable of opening TCP connections and reading and writing bytes.
-
-This document defines the protocol, not a particular implementation.
+The words **must**, **must not**, **should**, and **may** are normative.
 
 ---
 
-1. Transport
+## 1. Layering and roles
 
-CR2SE uses TCP as its transport protocol.
+TCP provides one reliable, ordered byte stream. It does not preserve write or
+message boundaries. A CR2SE implementation must therefore read and write the
+exact byte counts specified below and must handle partial socket operations.
 
-TCP provides a persistent, reliable, ordered, bidirectional byte stream between two endpoints.
+The node that opens TCP is the **initiator**. The node that accepts TCP is the
+**acceptor**. These roles determine handshake transcript ordering and stream-ID
+parity only. After authentication, either node may open streams and request
+services.
 
-Once a TCP connection has been established, either endpoint can send data. CR2SE therefore does not assign permanent client and server roles to connected peers.
+The protocol layers are:
 
-The endpoint that opens the TCP connection is called the initiator.
+```text
+application protocols and services
+              |
+bidirectional CR2SE streams
+              |
+CR2SE frames + connection integrity tag
+              |
+             TCP
+```
 
-The endpoint that accepts the TCP connection is called the acceptor.
-
-These terms describe how the connection was established. They do not restrict what either peer may do after the connection is established.
-
-Initiator                            Acceptor
-    |                                  |
-    | -------- TCP connection -------> |
-    |                                  |
-    | -------- CR2SE frames ---------> |
-    | <------- CR2SE frames ---------- |
-    | -------- CR2SE frames ---------> |
-    | <------- CR2SE frames ---------- |
-    |                                  |
-
-A CR2SE connection is intended to be persistent. Multiple operations should normally reuse an existing connection rather than opening a new TCP connection for every operation.
-
----
-
-2. TCP Is a Byte Stream
-
-TCP transports an ordered sequence of bytes. It does not preserve application message boundaries.
-
-For example, an implementation may perform two writes:
-
-write("hello")
-write("world")
-
-The receiver must not assume that two corresponding reads will return:
-
-read() -> "hello"
-read() -> "world"
-
-It could receive:
-
-read() -> "hel"
-read() -> "loworld"
-
-or:
-
-read() -> "hellowor"
-read() -> "ld"
-
-All of these are valid TCP behavior.
-
-CR2SE therefore needs its own mechanism for determining where one protocol message ends and another begins.
-
-That mechanism is the frame.
+Connection integrity does not provide confidentiality. Frame headers and
+payloads remain visible. An application may encrypt its payload as specified in
+`Encryption.md`.
 
 ---
 
-3. Frames
+## 2. Integer and text encoding
 
-A frame is the smallest independently encoded unit in CR2SE.
+All multi-byte integers are unsigned and encoded in network byte order
+(big-endian). Integer ranges are inclusive.
 
-Every frame consists of:
-
-1. a fixed-size header;
-2. zero or more payload bytes.
-
-The header describes the frame and specifies the exact size of its payload.
-
-┌─────────────────────────────┐
-│ Header                      │
-│ fixed size                  │
-├─────────────────────────────┤
-│ Payload                     │
-│ payload_length bytes        │
-└─────────────────────────────┘
-
-Because the header has a known size, a receiver can:
-
-1. read the complete header;
-2. decode the payload length;
-3. read exactly that many payload bytes;
-4. process the complete frame;
-5. begin reading the next frame.
-
-No delimiter or end marker is required.
-
-Payloads are arbitrary binary data. Their contents do not affect frame boundaries.
+Lengths always count bytes, not characters. Unless a field says otherwise,
+text is valid UTF-8 without a byte-order mark. A receiver must reject invalid
+UTF-8 in a field declared as text. Diagnostic text is not protocol state and
+must not be parsed to determine behavior.
 
 ---
 
-4. Byte Order
+## 3. Frame format
 
-All multi-byte integers in CR2SE use network byte order, also known as big-endian.
+Every frame starts with this 12-byte header:
 
-For example, the 32-bit integer:
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 1 byte | Version |
+| 1 | 1 byte | Type |
+| 2 | 2 bytes | Flags |
+| 4 | 4 bytes | Stream ID |
+| 8 | 4 bytes | Payload Length |
+| 12 | N bytes | Payload |
+| 12 + N | 16 bytes after authentication only | Integrity Tag |
 
-0x12345678
+Before authentication completes, only handshake frames are permitted and the
+frame size is:
 
-is transmitted as:
-
-12 34 56 78
-
-Implementations must convert between their native integer representation and CR2SE network byte order when necessary.
-
----
-
-5. Frame Format
-
-Every CR2SE frame begins with the following 12-byte header.
-
-Offset| Size| Field
-0| 1 byte| Version
-1| 1 byte| Type
-2| 2 bytes| Flags
-4| 4 bytes| Stream ID
-8| 4 bytes| Payload Length
-12| N bytes| Payload
-
-Graphically:
-
-byte offset
-
-0        ┌──────────────────────────┐
-         │ Version          1 byte  │
-1        ├──────────────────────────┤
-         │ Type             1 byte  │
-2        ├──────────────────────────┤
-         │ Flags            2 bytes │
-4        ├──────────────────────────┤
-         │ Stream ID        4 bytes │
-8        ├──────────────────────────┤
-         │ Payload Length   4 bytes │
-12       ├──────────────────────────┤
-         │                          │
-         │ Payload                  │
-         │                          │
-         │ Payload Length bytes     │
-         │                          │
-         └──────────────────────────┘
-
-The header size is always exactly 12 bytes.
-
-The total frame size is:
-
+```text
 12 + Payload Length
+```
 
-bytes.
+After authentication completes, every frame includes a 16-byte connection
+integrity tag and the frame size is:
+
+```text
+12 + Payload Length + 16
+```
+
+`Payload Length` does not include the header or integrity tag.
+
+The fields have these version 1 requirements:
+
+- `Version` must be `0x01`.
+- `Flags` must be zero. A nonzero value is a connection error.
+- `Payload Length` must be at most 65,536 bytes.
+- `Stream ID` and `Type` must obey the registry and state rules below.
+
+The 64 KiB payload limit applies to every frame, including implementations
+configured to tolerate more. A conforming sender must not send a larger frame,
+and a conforming receiver must support the full 65,536-byte limit. Large values
+are divided among `DATA` frames. At the maximum size, the 12-byte header adds
+approximately 0.018% overhead, or approximately 0.043% together with the
+mandatory 16-byte integrity tag. Bounded frames also improve multiplexing
+fairness and limit per-frame memory exposure.
+
+An implementation must validate the header and payload length before allocating
+or reading a payload buffer. It must use checked arithmetic when calculating a
+total frame size.
 
 ---
 
-6. Version
+## 4. Version 1 frame type registry
 
-"Version" is an unsigned 8-bit integer identifying the CR2SE protocol version used to encode the frame.
+Unassigned type values are invalid in version 1. Application extensions do not
+allocate frame types; they use a namespaced protocol identifier in `OPEN`.
 
-This specification defines:
+| Value | Name | Stream ID | Payload |
+|---:|---|---|---|
+| `0x01` | `HELLO` | 0 | exactly 100 bytes |
+| `0x02` | `AUTH` | 0 | exactly 64 bytes |
+| `0x03` | `PING` | 0 | exactly 8 bytes |
+| `0x04` | `PONG` | 0 | exactly 8 bytes |
+| `0x05` | `GOAWAY` | 0 | connection shutdown payload |
+| `0x06` | `ERROR` | 0 or a known nonzero stream | error payload |
+| `0x10` | `OPEN` | nonzero | stream opening payload |
+| `0x11` | `DATA` | nonzero | 1 through 65,536 opaque bytes |
+| `0x12` | `END` | nonzero | empty |
+| `0x13` | `CANCEL` | nonzero | error payload |
 
-Version = 1
-
-Every frame in CR2SE version 1 must contain:
-
-0x01
-
-in the Version field.
-
-A receiver must not interpret a frame according to version 1 rules if the Version field contains a version it does not support.
-
-How version negotiation and unsupported versions are handled will be defined separately.
+Values `0x00`, `0x07..0x0f`, and `0x14..0xff` are unassigned and invalid.
+Future meanings require a future CR2SE network version.
 
 ---
 
-7. Type
+## 5. Mandatory authenticated handshake
 
-"Type" is an unsigned 8-bit integer identifying the meaning of the frame.
+Both nodes must authenticate before opening application streams. The handshake
+uses fresh nonces, ephemeral X25519 keys, and signatures by the nodes' persistent
+Ed25519 identity keys.
 
-The type determines how the rest of the frame should be interpreted.
+The handshake provides:
 
-CR2SE will reserve part of the type space for protocol-defined frame types while allowing applications and extensions to define custom types.
+- proof that each peer controls the private key for its advertised CR2SE ID;
+- role binding, so an initiator proof cannot be reflected as an acceptor proof;
+- freshness through a new random nonce and ephemeral key on every connection;
+- session keys bound to both identities, roles, nonces, and ephemeral keys;
+- integrity and per-direction replay protection for every later frame.
 
-This allows CR2SE to provide common behavior without requiring every application protocol to become part of the CR2SE specification.
+It does not hide frame content.
 
-TODO: Type Registry
+### 5.1 HELLO payload
+
+Each node's first transmitted frame must be `HELLO`. Its payload is exactly:
+
+| Offset | Size | Field | Version 1 value |
+|---:|---:|---|---|
+| 0 | 1 | Handshake Version | `0x01` |
+| 1 | 1 | Identity Version | `0x01` |
+| 2 | 1 | Identity Key Algorithm | `0x01` (Ed25519) |
+| 3 | 32 | Ed25519 Public Key | sender's identity public key |
+| 35 | 1 | Key Agreement Algorithm | `0x01` (X25519) |
+| 36 | 32 | Ephemeral X25519 Public Key | new for this connection |
+| 68 | 32 | Nonce | CSPRNG output, new for this connection |
+
+The sender must generate a fresh ephemeral X25519 key pair and a fresh 32-byte
+nonce for every TCP connection. The ephemeral private key must not be reused and
+must be erased when no longer needed.
+
+The receiver derives the advertised CR2SE ID from the Ed25519 public key using
+`Identity.md`. If it connected expecting a particular identity, the derived ID
+must equal that expected ID. A mismatch is authentication failure.
+
+The remote ID may equal the local ID because several nodes may legitimately
+operate as one CR2SE identity. An implementation must not reject such a
+connection solely because the IDs match; TCP roles still keep the transcript
+and directional keys distinct.
+
+### 5.2 Transcript and AUTH payload
+
+Let `initiatorHello` and `acceptorHello` be the complete HELLO payloads, ordered
+by TCP role rather than arrival order. Define:
+
+```text
+helloTranscript =
+    uint32_be(length(initiatorHello))
+    || initiatorHello
+    || uint32_be(length(acceptorHello))
+    || acceptorHello
+
+authMessage(role) =
+    ASCII("CR2SE-NETWORK-AUTH-V1")
+    || 0x00
+    || role
+    || helloTranscript
+
+role = 0x01 for the initiator
+role = 0x02 for the acceptor
+```
+
+`ASCII(...)` contributes exactly the displayed ASCII bytes without quotes or a
+terminating zero. The explicit `0x00` is a domain-separator byte.
+
+After receiving and validating the peer's `HELLO`, each node sends one `AUTH`
+frame. Its payload is exactly the 64-byte Ed25519 signature made by the sender's
+identity key over `authMessage(senderRole)`.
+
+The receiver verifies the signature with the Ed25519 public key in the peer's
+`HELLO`. Invalid signatures, duplicate `HELLO` or `AUTH` frames, an `AUTH` before
+the peer's `HELLO`, and non-handshake frames before authentication are
+connection errors.
+
+HELLO and AUTH frames do not have integrity tags. Each direction becomes tagged
+immediately after the `AUTH` frame in that direction. Because TCP preserves
+order, a receiver verifies that `AUTH` before interpreting the next frame from
+the same peer.
+
+A node must not send any frame other than `HELLO`, `AUTH`, or a best-effort
+connection `ERROR` until it has received and verified the peer's `AUTH`.
+
+### 5.3 Session key derivation
+
+After the peer's `AUTH` verifies, each node calculates the X25519 shared secret
+using its ephemeral private key and the peer's ephemeral public key. It must
+reject an all-zero shared secret.
 
 Define:
 
-- the standard CR2SE frame types;
-- the numeric range reserved for CR2SE;
-- the numeric range available for custom types;
-- behavior when receiving an unknown type;
-- whether custom type allocation requires additional identification or namespacing;
-- rules for future extensions.
+```text
+salt = SHA-256(
+    ASCII("CR2SE-NETWORK-KEYS-V1")
+    || 0x00
+    || helloTranscript
+)
 
-Likely standard operations include concepts such as:
+prk = HKDF-Extract-SHA-256(salt, x25519SharedSecret)
 
-OPEN
-DATA
-END
-CANCEL
+initiatorToAcceptorKey = HKDF-Expand-SHA-256(
+    prk, ASCII("CR2SE-NETWORK-V1-I2A-KEY"), 32)
 
-These names are currently illustrative and are not yet assigned protocol values.
+acceptorToInitiatorKey = HKDF-Expand-SHA-256(
+    prk, ASCII("CR2SE-NETWORK-V1-A2I-KEY"), 32)
 
----
+initiatorToAcceptorNoncePrefix = HKDF-Expand-SHA-256(
+    prk, ASCII("CR2SE-NETWORK-V1-I2A-NONCE"), 16)
 
-8. Flags
+acceptorToInitiatorNoncePrefix = HKDF-Expand-SHA-256(
+    prk, ASCII("CR2SE-NETWORK-V1-A2I-NONCE"), 16)
+```
 
-"Flags" is a 16-bit bit field containing additional properties of a frame.
+The initiator uses the I2A key and prefix to send and the A2I values to receive.
+The acceptor uses them in the opposite directions.
 
-Each bit may represent a boolean property.
+### 5.4 Post-handshake integrity tag
 
-For example, a future specification could define:
+Each direction maintains an independent unsigned 64-bit sequence number. The
+first frame after that direction's `AUTH` uses sequence `0`; each later frame
+uses the next integer. Sequence numbers are implicit and are not transmitted.
 
-bit 0 -> some property
-bit 1 -> another property
-...
+For a protected frame:
 
-No flags are currently defined.
+```text
+nonce = directionNoncePrefix || uint64_be(sequence)
+authenticatedData = exact12ByteHeader || payload
 
-For CR2SE version 1, until individual flags are specified, senders must set undefined flag bits to zero.
+integrityTag = XChaCha20-Poly1305(
+    key = directionKey,
+    nonce = nonce,
+    plaintext = empty,
+    authenticatedData = authenticatedData
+)
+```
 
-Receivers must ignore undefined flag bits.
+With empty plaintext, the XChaCha20-Poly1305 result is exactly its 16-byte
+authentication tag. The payload is authenticated data and remains plaintext.
+The sender appends this tag after the payload.
 
-This allows future protocol revisions to introduce optional behavior without changing the frame header layout.
+The receiver reconstructs the nonce from its expected sequence number and must
+authenticate the header and payload before dispatching the frame. It must not
+dispatch, log as trusted, or otherwise act on an unauthenticated payload. A tag
+failure requires immediate TCP termination without sending an error frame.
 
-TODO: Flags
-
-Define any flags required by the standard CR2SE frame types.
-
----
-
-9. Payload Length
-
-"Payload Length" is an unsigned 32-bit integer specifying the number of payload bytes immediately following the header.
-
-A value of zero means that the frame has no payload.
-
-For example:
-
-Payload Length = 5
-
-means that exactly five bytes follow the 12-byte header.
-
-The next byte after those five bytes is the first byte of the next CR2SE frame.
-
-Although the field can mathematically represent payloads approaching 4 GiB, implementations must not use enormous individual frames for transferring large objects.
-
-Large data is divided into multiple frames as described later.
-
-Maximum Frame Size
-
-CR2SE implementations must enforce a configurable maximum accepted payload size.
-
-This prevents a malicious or defective peer from declaring an unreasonable payload length and causing an implementation to allocate excessive memory.
-
-A standard default maximum will be defined before version 1 is finalized.
-
-TODO: Maximum Payload Size
-
-Define:
-
-- required maximum payload size supported by compliant implementations;
-- recommended default maximum;
-- behavior when the limit is exceeded.
+The sequence advances only after successful authentication of a complete frame.
+A connection must close before either direction would wrap its sequence number.
+Keys and nonce prefixes belong to one connection and must never be reused on
+another connection.
 
 ---
 
-10. Stream ID
+## 6. Stream IDs
 
-"Stream ID" is an unsigned 32-bit integer identifying a logical stream within a CR2SE connection.
+Stream ID `0` is reserved for connection-level frames.
 
-A stream represents one independent operation or conversation between two peers.
+The initiator creates streams with odd IDs beginning at `1`. The acceptor
+creates streams with even IDs beginning at `2`. Each endpoint allocates its own
+IDs sequentially, increasing by exactly two. Gaps and reuse are forbidden on
+the same TCP connection.
 
-For example, one TCP connection could simultaneously contain:
+A received `OPEN` must contain exactly the next expected ID for the remote
+peer. Wrong parity, a gap, reuse, or a non-increasing ID is a connection error.
 
-Stream 1  -> peer search
-Stream 2  -> file transfer
-Stream 3  -> metadata request
-Stream 4  -> another file transfer
-
-Frames belonging to different streams may be interleaved.
-
-For example:
-
-stream=1  search request
-stream=2  file request
-stream=1  search result
-stream=2  file data
-stream=2  file data
-stream=1  search result
-stream=3  metadata request
-stream=2  file data
-
-The receiver uses the Stream ID to route each frame to the operation to which it belongs.
-
-This is called multiplexing: multiple logical communications share one physical TCP connection.
+When the next local ID cannot fit in `uint32`, the node sends `GOAWAY` with
+`ID_EXHAUSTED`, drains active streams, closes TCP, and opens a new connection if
+needed.
 
 ---
 
-11. Stream ID Allocation
+## 7. Opening and identifying a stream
 
-Both peers may create streams independently.
+`OPEN` creates one bidirectional stream. Its payload is:
 
-To prevent both peers from accidentally choosing the same Stream ID, stream IDs are divided according to which endpoint established the TCP connection.
+```text
+uint16_be(protocolIdLength)
+protocolId                         protocolIdLength bytes
+uint32_be(protocolVersion)
+```
 
-The initiator creates streams using odd IDs:
+Requirements are:
 
-1
-3
-5
-7
-...
+- `protocolIdLength` is `1..255`.
+- `protocolId` is lowercase ASCII matching
+  `[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?`.
+- Adjacent dots, a leading dot, and a trailing dot are invalid.
+- `protocolVersion` is `1..2^32-1`.
+- The payload contains no trailing bytes.
 
-The acceptor creates streams using even IDs:
+The `cr2se.` prefix is reserved for protocols standardized by CR2SE. Custom
+protocols should use a stable reverse-domain prefix controlled by their author,
+for example `org.example.thumbnail`.
 
-2
-4
-6
-8
-...
+The receiver processes `OPEN` before later frames on the stream because TCP is
+ordered. If it does not support the named protocol and version, it sends a
+stream `ERROR` with `UNSUPPORTED_PROTOCOL`. The opener may send `DATA`
+immediately without waiting for an acknowledgement; consequently it must be
+prepared for that error and stop producing data when it arrives.
 
-Therefore:
-
-Initiator                         Acceptor
-
-stream 1  ---------------------->
-
-          <---------------------- stream 2
-
-stream 3  ---------------------->
-
-          <---------------------- stream 4
-
-Stream ID "0" is reserved for connection-level protocol operations and must not be used for ordinary application streams.
-
-Stream IDs must not be reused during the lifetime of the same TCP connection.
-
-The behavior when the available Stream ID space is exhausted will be defined before version 1 is finalized.
+Application protocol payloads are arbitrary bytes. Concatenating the payloads
+of successive `DATA` frames in one direction produces that direction's logical
+byte sequence. Frame boundaries have no application meaning unless the named
+application protocol explicitly assigns them meaning.
 
 ---
 
-12. Streams Are Bidirectional
+## 8. Stream lifecycle
 
-A CR2SE stream is bidirectional.
+A new stream begins with both send directions open:
 
-After a stream has been created, both peers may send frames belonging to that stream.
+```text
+                 OPEN
+                  |
+          both directions open
+             /             \
+      local END          remote END
+             \             /
+       one direction remains open
+                  |
+           other side END
+                  |
+             normally closed
 
-For example:
+At any nonterminal point:
+    CANCEL or stream ERROR -> terminal
+```
 
-Peer A                              Peer B
+The rules are:
 
-        stream 17 request
------------------------------------->
+1. Only the stream creator sends `OPEN`.
+2. Either peer may send `DATA` while its own send direction is open.
+3. `DATA` order within each direction is the TCP/frame order.
+4. `END` has no payload and half-closes the sender's direction.
+5. A peer must not send `DATA` or another `END` after its own `END`.
+6. The stream closes normally only after both directions have received `END`.
+7. `CANCEL` terminates both directions immediately. It may be sent while either
+   direction remains open.
+8. A stream `ERROR` terminates both directions immediately.
+9. Closing a stream does not close the TCP connection.
 
-        stream 17 response
-<------------------------------------
+After a stream becomes terminal, both peers must discard later non-`OPEN`
+frames carrying that stream ID. This rule accommodates frames already queued
+before a `CANCEL` or `ERROR` arrived. An `OPEN` reusing any prior ID remains a
+connection error. An implementation may close a connection when a peer keeps
+sending excessive data for terminal streams.
 
-        stream 17 data
-<------------------------------------
-
-        stream 17 data
-<------------------------------------
-
-A stream is therefore not inherently a "request stream" or "response stream".
-
-The protocol implemented on top of the stream determines the meaning and permitted ordering of its data.
-
----
-
-13. Multiplexing
-
-Frames from different streams may be transmitted in any order permitted by their respective stream protocols.
-
-Consider two operations:
-
-Stream 1 -> search
-Stream 3 -> file transfer
-
-CR2SE does not require:
-
-all stream 1 frames
-all stream 3 frames
-
-Instead, an implementation may send:
-
-stream 1
-stream 3
-stream 3
-stream 1
-stream 3
-stream 1
-
-This allows a large operation to coexist with small or latency-sensitive operations.
-
-For example, transferring a multi-gigabyte file should not require waiting until the transfer finishes before sending a small search result.
-
-CR2SE defines multiplexing at the frame level. TCP itself still provides one ordered byte stream, so packet loss at the TCP layer may temporarily delay all CR2SE streams on that connection.
+A non-`OPEN` frame for an ID that was never created is a connection error.
 
 ---
 
-14. Large Data Transfers
+## 9. Multiplexing and backpressure
 
-Large objects must not be encoded as a single enormous CR2SE frame.
+Frames from different streams may be interleaved. Frame bytes themselves must
+never be interleaved: one complete header, payload, and tag is written before
+bytes of the next frame.
 
-Instead, they are divided into multiple payloads and transmitted through multiple frames belonging to the same stream.
+Implementations should schedule active streams fairly so a large transfer does
+not permanently starve small operations. They may combine several complete
+frames in one socket write.
 
-Conceptually:
-
-OPEN stream=17
-
-DATA stream=17
-    [chunk]
-
-DATA stream=17
-    [chunk]
-
-DATA stream=17
-    [chunk]
-
-...
-
-END stream=17
-
-The exact standard frame types are still to be defined, but the principle is part of CR2SE:
-
-«Large objects are streamed through multiple bounded frames rather than represented by one frame containing the complete object.»
-
-This allows implementations to process data incrementally.
-
-For example, a receiver may:
-
-receive frame
-      |
-      v
-process/write payload
-      |
-      v
-discard payload buffer
-      |
-      v
-receive next frame
-
-The complete object therefore does not need to fit in memory.
-
-The meaning of the transferred bytes, such as whether they represent a file, serialized object, search result, or another resource, belongs to the protocol operating on that stream.
+Version 1 has no per-stream wire-level flow-control frame. TCP provides
+connection-level backpressure. Implementations must use bounded queues and must
+not buffer unbounded data for a slow application consumer. They may cancel a
+stream whose local resource limit is exceeded.
 
 ---
 
-15. Small Data Transfers
+## 10. Connection control
 
-Small messages use exactly the same framing mechanism.
+### 10.1 PING and PONG
 
-For example, a five-byte payload is simply:
+An authenticated node may send `PING` on stream `0` with any 8-byte token. The
+peer must answer with one `PONG` containing the identical token. A `PONG` does
+not need to preserve ordering relative to application work beyond normal frame
+ordering.
 
-Payload Length = 5
-Payload        = 5 bytes
+Receipt of an unsolicited or duplicate `PONG` is not a protocol error; it is
+ignored. Timeout selection and the number of outstanding pings are local policy.
 
-CR2SE therefore does not require separate transport mechanisms for large and small data.
+### 10.2 GOAWAY
 
-Both are sequences of frames.
+`GOAWAY` begins graceful connection shutdown. Its payload is:
 
-The difference is that a small operation may require only one frame while a large operation may require thousands or millions of frames.
+```text
+uint32_be(lastAcceptedRemoteStreamId)
+uint16_be(errorCode)
+uint16_be(reasonLength)
+reason                           reasonLength UTF-8 bytes
+```
 
----
+`reasonLength` is `0..1024`, and there must be no trailing bytes.
+`lastAcceptedRemoteStreamId` is the greatest stream ID opened by the receiver
+of `GOAWAY` that the sender accepted, or zero if none.
 
-16. Example Frame
+The value must be zero or have the receiver's local stream parity, and it must
+not exceed the greatest stream ID the receiver actually opened. A repeated
+`GOAWAY` may reduce this value but must not increase it.
 
-Consider a frame with:
+After sending or receiving `GOAWAY`, a node must not create new streams on that
+connection. Streams at or below the reported ID may finish. Locally created
+streams above the reported ID are treated as refused. If a peer opens a stream
+after `GOAWAY`, the receiver sends `REFUSED_STREAM` for that stream and otherwise
+continues draining.
 
-Version        = 1
-Type           = 2
-Flags          = 0
-Stream ID      = 17
-Payload Length = 5
-Payload        = "hello"
-
-Its bytes are:
-
-01 02 00 00 00 00 00 11 00 00 00 05 68 65 6c 6c 6f
-
-Broken down:
-
-01
-│
-└─ Version = 1
-
-02
-│
-└─ Type = 2
-
-00 00
-│
-└─ Flags = 0
-
-00 00 00 11
-│
-└─ Stream ID = 17
-
-00 00 00 05
-│
-└─ Payload Length = 5
-
-68 65 6c 6c 6f
-│
-└─ Payload = "hello"
-
-The receiver first reads exactly 12 bytes.
-
-After decoding the header, it discovers:
-
-Payload Length = 5
-
-It then reads exactly five additional bytes.
-
-At that point one complete CR2SE frame has been received.
-
-The receiver then starts reading another 12-byte header.
+A node receiving `GOAWAY` should send its own `GOAWAY` if it has not already
+done so. Once no accepted streams remain active, either node may close TCP.
 
 ---
 
-17. Partial Reads and Writes
+## 11. Error and cancellation payloads
 
-CR2SE implementations must not assume that a single operating-system read or write operation processes an entire frame.
+`ERROR` and `CANCEL` use:
 
-For example, requesting 12 bytes from a TCP socket may return fewer than 12 bytes even though the connection remains valid.
+```text
+uint16_be(errorCode)
+uint16_be(reasonLength)
+reason                           reasonLength UTF-8 bytes
+```
 
-An implementation must continue reading until the complete header has been obtained.
+`reasonLength` is `0..1024`; no trailing bytes are permitted. The reason is
+optional diagnostic text and must not contain secrets or be used as a
+machine-readable decision value.
 
-Similarly, after obtaining the payload length, it must continue reading until exactly that number of payload bytes has been obtained.
+Version 1 codes are:
 
-The same rule applies to writing. An implementation must ensure that all bytes of a frame are written even if the underlying API performs a partial write.
+| Value | Name | Meaning |
+|---:|---|---|
+| `0x0000` | `NO_ERROR` | graceful `GOAWAY` only |
+| `0x0001` | `PROTOCOL_ERROR` | malformed or forbidden protocol behavior |
+| `0x0002` | `AUTHENTICATION_FAILED` | identity or handshake verification failed |
+| `0x0003` | `FRAME_SIZE_ERROR` | payload exceeds the version 1 limit |
+| `0x0004` | `UNSUPPORTED_PROTOCOL` | `OPEN` protocol ID/version is unsupported |
+| `0x0005` | `STREAM_STATE_ERROR` | invalid transition on an existing stream |
+| `0x0006` | `REFUSED_STREAM` | stream was not accepted, including after `GOAWAY` |
+| `0x0007` | `INTERNAL_ERROR` | implementation failed while handling the connection |
+| `0x0008` | `ID_EXHAUSTED` | no local stream IDs remain |
+| `0x0009` | `CANCELLED` | operation was intentionally cancelled |
+| `0x000a` | `RESOURCE_LIMIT` | bounded local resource limit was reached |
 
-The mechanism used to achieve this is language and library specific and is outside the CR2SE specification.
+`NO_ERROR` is invalid in `ERROR` or `CANCEL`. `CANCEL` normally uses
+`CANCELLED`, but may use `RESOURCE_LIMIT` or `INTERNAL_ERROR` when applicable.
+Application-specific failures belong to the application byte protocol, not this
+registry.
 
----
+An unregistered error code or a code used where this section forbids it is a
+malformed payload and therefore a connection error.
 
-18. Payload Encoding
-
-CR2SE does not impose a universal serialization format on frame payloads.
-
-A payload is an arbitrary sequence of bytes:
-
-00 ... FF
-
-The protocol associated with the stream determines how those bytes are interpreted.
-
-A payload could therefore contain:
-
-- raw file bytes;
-- UTF-8 text;
-- a custom binary structure;
-- Protocol Buffers;
-- CBOR;
-- JSON;
-- another application-specific representation.
-
-CR2SE framing does not need to understand the payload representation.
-
-This separation allows applications to use CR2SE without forcing them to adopt a particular serialization library or data model.
-
----
-
-19. Connection and Stream Layers
-
-CR2SE separates connection transport from the meaning of individual operations.
-
-Conceptually:
-
-┌───────────────────────────────────────┐
-│ Application protocols                 │
-│                                       │
-│ storage / search / messaging / ...    │
-├───────────────────────────────────────┤
-│ CR2SE streams                         │
-│                                       │
-│ independent logical operations        │
-├───────────────────────────────────────┤
-│ CR2SE frames                          │
-│                                       │
-│ header + payload                      │
-├───────────────────────────────────────┤
-│ TCP                                   │
-│                                       │
-│ reliable ordered byte stream          │
-└───────────────────────────────────────┘
-
-This separation is intentional.
-
-The framing layer should not need to understand storage, searching, files, users, or other application concepts.
-
-Likewise, an application protocol should not need to determine where one TCP read ends and another begins.
+An `ERROR` on stream `0` is a connection error: the sender closes TCP after a
+best-effort complete write. An `ERROR` on a known nonzero stream terminates
+only that stream.
 
 ---
 
-20. Connection Lifetime
+## 12. Required error handling
 
-A CR2SE TCP connection is intended to carry multiple streams over time.
+The following require immediate TCP termination:
 
-Opening an operation does not require opening another TCP connection.
+- unsupported `Version`;
+- nonzero flags;
+- unknown frame type;
+- payload length above 65,536;
+- invalid frame type/stream-ID combination;
+- malformed connection-control or handshake payload;
+- invalid handshake order, value, signature, or expected identity;
+- wrong-parity, skipped, reused, or out-of-order stream ID;
+- a frame for a stream that never existed;
+- failed integrity-tag verification;
+- truncated header, payload, or integrity tag;
+- sequence-number exhaustion.
 
-For example:
+If framing is trustworthy and the direction's integrity state is known, the
+node should send an appropriate connection `ERROR` before closing. It must close
+without an error when the version is unsupported, the integrity tag fails, or
+safe encoding of a response is uncertain.
 
-TCP connection established
-        |
-        +-- stream 1
-        |
-        +-- stream 3
-        |
-        +-- stream 5
-        |
-        +-- stream 7
-        |
-        ...
-        |
-TCP connection closed
+Invalid `DATA`, `END`, or application sequencing on an existing active stream
+causes a stream `ERROR` with `STREAM_STATE_ERROR`; other streams remain usable.
+A malformed `OPEN` payload causes a stream `ERROR` with `PROTOCOL_ERROR` after
+its stream ID has passed the parity and exact-sequence checks. The rejected ID
+is consumed and cannot be reused.
 
-Closing one stream does not close the TCP connection.
+TCP ending immediately terminates every active stream. A stream that had not
+already received `END` in both directions reports transport failure, not normal
+completion. EOF in the middle of a frame is always truncation.
 
-The connection may remain available for future streams.
-
-A TCP connection ending terminates all streams carried by that connection.
-
----
-
-21. Connection Symmetry
-
-CR2SE peers are symmetric after connection establishment.
-
-The terms initiator and acceptor only determine:
-
-- which peer opened the TCP connection;
-- which peer allocates odd or even Stream IDs.
-
-They do not determine which peer may issue requests.
-
-For example:
-
-Initiator                          Acceptor
-
-   ---- request stream 1 ---------->
-
-   <--- request stream 2 -----------
-
-   ---- response stream 2 --------->
-
-   <--- response stream 1 ----------
-
-Both peers may therefore simultaneously request services from each other over the same TCP connection.
+Once a header is rejected, the implementation must not scan subsequent bytes
+for a possible frame boundary. It closes the connection, preventing loss of
+synchronization.
 
 ---
 
-22. Protocol Errors
+## 13. Resource and concurrency requirements
 
-Malformed input must not cause an implementation to lose synchronization and continue interpreting arbitrary bytes as valid frames.
+Implementations must:
 
-Examples of protocol errors include:
+- cap concurrent connections, active streams, queued outbound bytes, and
+  per-stream buffered bytes according to local policy;
+- enforce the frame limit before allocation;
+- process payloads incrementally at the application layer when logical values
+  are large;
+- serialize writers so bytes from different frames cannot mix;
+- treat all peer-provided diagnostic text, protocol IDs, and payloads as
+  untrusted input;
+- impose a handshake timeout and may impose idle or ping timeouts;
+- erase ephemeral private keys and derived session keys when the connection
+  ends;
+- never treat a frame as belonging to the authenticated peer until its tag has
+  verified.
 
-- invalid or unsupported protocol versions;
-- invalid frame types;
-- illegal Stream IDs;
-- invalid stream state transitions;
-- payload lengths exceeding configured limits;
-- invalid use of reserved fields.
-
-The exact distinction between stream-level errors and connection-level errors is not yet defined.
-
-TODO: Error Handling
-
-Define:
-
-- connection-level errors;
-- stream-level errors;
-- whether an error frame exists;
-- behavior for malformed headers;
-- behavior for unsupported versions;
-- behavior for unknown standard frame types;
-- behavior for unknown custom frame types;
-- behavior for invalid stream state transitions;
-- conditions requiring immediate TCP connection termination.
+A local resource limit should cancel only the affected stream when safe. A node
+may use `GOAWAY` or close TCP when connection-wide limits or repeated abuse make
+continued processing unsafe.
 
 ---
 
-23. Stream Lifecycle
-
-CR2SE streams require a defined lifecycle so that both peers agree about whether a Stream ID is active.
-
-The intended model is approximately:
-
-        OPEN
-          |
-          v
-       ACTIVE
-       /     \
-      /       \
-    END      CANCEL
-     |          |
-     v          v
-   CLOSED     CLOSED
-
-The final state machine has not yet been specified.
-
-TODO: Stream Lifecycle
-
-Define:
-
-- how a stream is opened;
-- what information is included when opening it;
-- when each peer may send data;
-- normal stream completion;
-- cancellation;
-- remote cancellation;
-- invalid state transitions;
-- behavior when the TCP connection disappears;
-- whether half-closed streams are supported.
-
----
-
-24. Standard and Custom Types
-
-CR2SE must support both standardized behavior and application-specific extensions.
-
-Standard types provide interoperability between independent CR2SE implementations.
-
-Custom types allow applications to introduce functionality without modifying the core CR2SE specification.
-
-The 8-bit Type field provides 256 possible numeric values:
-
-0 through 255
-
-Part of this space will be assigned to CR2SE itself and part will be available for extensions.
-
-The exact division has not yet been finalized.
-
-TODO: Standard Types
-
-Define the initial standard type registry.
-
-Candidate concepts include:
-
-OPEN
-DATA
-END
-CANCEL
-ERROR
-
-For every standard type, specify:
-
-- numeric value;
-- allowed Stream IDs;
-- payload format;
-- permitted flags;
-- valid stream states;
-- expected receiver behavior.
-
-TODO: Custom Types
-
-Define the extension mechanism.
-
-It must answer:
-
-- which Type values applications may use;
-- how independently developed applications avoid collisions;
-- how a peer identifies the protocol associated with a custom stream;
-- what happens when a peer does not understand an extension;
-- whether extensions are negotiated when opening a stream.
-
----
-
-25. Security
-
-CR2SE version 1 currently specifies framing and stream transport only.
-
-Authentication, peer identity, encryption, integrity protection beyond TCP's transport checks, and authorization are not yet specified.
-
-Applications must therefore not assume that a TCP connection alone proves the identity of the remote peer.
-
-TODO: Security
-
-Define whether security belongs:
-
-- directly in CR2SE;
-- in an optional CR2SE layer;
-- in the application protocol above CR2SE;
-- or in a secure transport below CR2SE.
-
-This decision must be made before CR2SE is recommended for communication over untrusted networks.
-
----
-
-26. Protocol Definition vs Implementation
-
-This repository defines a wire protocol.
-
-A wire protocol specifies the bytes that independent implementations exchange and the rules used to interpret them.
-
-It should therefore be possible to implement CR2SE independently in different languages:
-
-C implementation
-       |
-       | CR2SE
-       |
-Java implementation
-
-or:
-
-Rust implementation
-       |
-       | CR2SE
-       |
-C implementation
-
-without either implementation knowing how the other is internally structured.
-
-An implementation is compliant when the bytes it sends and its interpretation of received bytes follow this specification.
-
-Implementation details such as:
-
-- threads;
-- async runtimes;
-- socket libraries;
-- queues;
-- memory management;
-- internal object models;
-
-are outside the protocol specification unless they affect observable wire behavior.
-
----
-
-27. Design Principles
-
-CR2SE follows these principles.
-
-TCP is the transport.
-
-All compliant implementations communicate using TCP.
-
-Connections are persistent and bidirectional.
-
-Either peer may initiate operations after a connection has been established.
-
-TCP connection boundaries are not message boundaries.
-
-CR2SE defines explicit binary framing.
-
-Frames are length-prefixed.
-
-Arbitrary binary payloads require no escaping or delimiter detection.
-
-One connection carries multiple logical streams.
-
-Streams are identified by Stream IDs.
-
-Streams may be active concurrently.
-
-Frames belonging to different streams may be interleaved.
-
-Large data is chunked.
-
-Large resources are transferred through multiple bounded frames.
-
-The framing layer is application independent.
-
-CR2SE transports bytes without needing to understand their application-level meaning.
-
-The wire format is language independent.
-
-No part of the protocol depends on the memory layout or serialization behavior of a specific programming language.
-
----
-
-28. Version 1 Work Remaining
-
-The basic CR2SE framing model is defined, but version 1 is not yet complete.
-
-The main remaining protocol decisions are:
-
-- [ ] Define standard frame types and their numeric values.
-- [ ] Define the custom type range and extension mechanism.
-- [ ] Define the stream lifecycle and state machine.
-- [ ] Define stream opening semantics.
-- [ ] Define stream completion and cancellation.
-- [ ] Define error handling.
-- [ ] Define maximum payload requirements.
-- [ ] Define connection-level behavior using Stream ID "0".
-- [ ] Define protocol/version negotiation.
-- [ ] Define connection shutdown behavior.
-- [ ] Define behavior when Stream IDs are exhausted.
-- [ ] Define security and peer authentication requirements.
-- [ ] Provide normative binary examples and interoperability test vectors.
-
----
-
-29. Status
-
-CR2SE is currently under design.
-
-The following decisions should be considered stable unless the specification is explicitly revised:
-
-Transport              TCP
-Connection             persistent and bidirectional
-Peer roles             symmetric after establishment
-Framing                 binary, length-prefixed
-Header size             12 bytes
-Integer byte order      big-endian
-Version field           unsigned 8-bit
-Type field              unsigned 8-bit
-Flags field             unsigned 16-bit
-Stream ID               unsigned 32-bit
-Payload Length          unsigned 32-bit
-Initiator Stream IDs    odd
-Acceptor Stream IDs     even
-Stream ID 0             reserved
-Payload                 arbitrary bytes
-Large transfers         multiple bounded frames
-Multiplexing            multiple streams per TCP connection
-
-The next major specification task is to define the frame types and stream lifecycle.
+## 14. Version 1 compliance summary
+
+A compliant implementation:
+
+```text
+uses TCP;
+reads and writes exact frame byte counts;
+encodes integers big-endian;
+uses the fixed 12-byte header;
+limits payloads to 65,536 bytes;
+performs the mandatory mutual identity handshake;
+authenticates every post-handshake frame with its implicit sequence number;
+uses odd initiator and even acceptor stream IDs in increasing order;
+supports bidirectional, half-closed streams;
+supports all registered version 1 frame types and error behavior;
+does not assign custom frame types;
+uses OPEN protocol identifiers for standard and extension protocols;
+does not reuse stream IDs, session keys, nonces, or sequence numbers;
+and treats premature TCP termination as failure for unfinished streams.
+```
+
+The corresponding implementation-neutral algorithms are in
+[`pseudoCode/Network.md`](./pseudoCode/Network.md). Deterministic cryptographic
+interoperability values are in
+[`pseudoCode/NetworkTestVectors.md`](./pseudoCode/NetworkTestVectors.md).

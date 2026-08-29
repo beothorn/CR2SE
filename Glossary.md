@@ -20,7 +20,12 @@ A running implementation of CR2SE. A node operates as exactly one CR2SE identity
 The remote CR2SE node or identity participating in an interaction, as determined by context. Prefer **node** when referring specifically to a running implementation and **identity** when referring to ownership, trust, credits, or authorization.
 
 **CR2SE connection** (short form: **connection**)
-A persistent network connection between two nodes. A connection is a communication channel, not an identity.
+A persistent network connection between two nodes. Version 1 mutually
+authenticates the nodes during its handshake and integrity-protects every later
+frame. A service may therefore use the remote identity bound to the connection
+without performing another identity handshake. A connection is still a
+communication channel, not an identity, and it does not provide payload
+confidentiality by default.
 
 **Node API**
 The interface through which an application controls its local CR2SE node. It is distinct from the peer-to-peer network protocol. The Node API may be embedded in the application or exposed through local IPC. See [Node API](./NodeApi.md).

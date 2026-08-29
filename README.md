@@ -21,7 +21,7 @@ Domain terms have consistent meanings across the specifications and are defined 
 
 # Components
 
-- [Network](./Network.md) - Transport protocol  
+- [Network](./Network.md) - Authenticated, integrity-protected, multiplexed TCP transport protocol
 - [NodeApi](./NodeApi.md) - Commands for boards, service definitions, invocation, and node control  
 - [Identity](./Identity.md) - Identification  
 - [Encryption](./Encryption.md) - Signing, encrypting, verifying  

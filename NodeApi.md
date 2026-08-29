@@ -557,9 +557,17 @@ Example:
   "id": "1",
   "operation": "connection.open",
   "address": "192.0.2.10",
-  "port": 8042
+  "port": 8042,
+  "expected_peer_id": "cr2se:<expected-base32-id>"
 }
 ```
+
+`expected_peer_id` is optional. When present, it is the textual CR2SE ID
+defined by `Identity.md`. The node must require the identity authenticated by
+the network handshake to equal this value. A mismatch fails the operation and
+the connection must not become available through the Node API. Callers
+connecting through a signed Discovery record should supply that record's
+identity here.
 
 A successful response returns a connection identifier:
 
@@ -568,7 +576,8 @@ A successful response returns a connection identifier:
   "id": "1",
   "ok": true,
   "result": {
-    "connection_id": "7f90c317"
+    "connection_id": "7f90c317",
+    "peer_id": "cr2se:<authenticated-base32-id>"
   }
 }
 ```
@@ -582,6 +591,11 @@ This is important because more than one connection involving the same address ma
 The `connection_id` is a string value with 8 characters.
 
 Clients must treat it as an opaque string.
+
+`peer_id` is the remote identity derived and authenticated by the mandatory
+`Network.md` handshake. It is returned even when `expected_peer_id` was omitted.
+Applications and services may use this connection property without repeating
+the identity handshake.
 
 ---
 
@@ -634,12 +648,14 @@ Example response:
     "connections": [
       {
         "connection_id": "7f90c317",
+        "peer_id": "cr2se:<authenticated-base32-id>",
         "address": "192.0.2.10",
         "port": 8042,
         "state": "connected"
       },
       {
         "connection_id": "93bf210a",
+        "peer_id": "cr2se:<authenticated-base32-id>",
         "address": "192.0.2.11",
         "port": 8042,
         "state": "connected"
@@ -649,7 +665,8 @@ Example response:
 }
 ```
 
-Additional metadata may be added to connection objects in future versions.
+Every connected entry contains the authenticated `peer_id`. Additional metadata
+may be added to connection objects in future versions.
 
 Clients must ignore fields they do not understand.
 
@@ -711,7 +728,11 @@ Example response:
 
 Optionally, additional information may be added such as measured round-trip time.
 
-The exact peer-level protocol used to implement ping must be defined by the relevant CR2SE peer protocol specification.
+The node implements this operation using the `PING` and matching `PONG` frames
+defined by `Network.md`. It reports `reachable: true` only after receiving the
+identical 8-byte token within its locally configured timeout. A missing response,
+connection failure, or invalid frame reports the operation as unsuccessful or
+`reachable: false` according to the Node API error model.
 
 `connection.ping` describes the Node API operation, not the bytes exchanged between CR2SE peers.
 

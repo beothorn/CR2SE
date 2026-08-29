@@ -4,9 +4,12 @@ CR2SE uses cryptography for identity, signatures, confidentiality, integrity, an
 
 The [CR2SE Glossary](./Glossary.md) defines the common meaning of **identity**, **node**, **peer**, and **connection** used by this specification.
 
-Encryption is intentionally **not required for ordinary CR2SE storage or communication**.
+Confidentiality encryption is intentionally **not required for ordinary CR2SE
+storage or communication**.
 
-A CR2SE node may store or transmit plaintext data.
+A CR2SE node may store or transmit plaintext data. Plaintext transmitted over a
+version 1 CR2SE network connection is nevertheless integrity-protected and
+bound to the identities authenticated by the mandatory `Network.md` handshake.
 
 This is a deliberate property of the protocol.
 
@@ -26,10 +29,13 @@ CR2SE version 1 therefore distinguishes between:
 cryptographic identity
     required
 
+connection authentication and integrity
+    required
+
 data encryption
     optional
 
-encrypted peer communication
+connection confidentiality
     optional
 ```
 
@@ -79,7 +85,12 @@ Identity ID derivation          SHA-256
 Public-key key agreement        X25519
 Key derivation                  HKDF-SHA-256
 Authenticated encryption        XChaCha20-Poly1305
+Network frame integrity         XChaCha20-Poly1305 tag
 ```
+
+For network frame integrity, `Network.md` invokes XChaCha20-Poly1305 with an
+empty plaintext and authenticates the visible frame header and payload as
+additional data. This produces a 16-byte tag without encrypting the payload.
 
 Random values and cryptographic keys that require randomness must be generated using a cryptographically secure random number generator.
 
@@ -907,7 +918,10 @@ verify using Alice's
 Ed25519 public key
 ```
 
-The protocol performing the authentication must define the exact challenge and signed context.
+The protocol performing the authentication must define the exact challenge and
+signed context. For a CR2SE network connection, `Network.md` defines a
+role-bound transcript containing both peers' fresh nonces, identity keys, and
+ephemeral keys.
 
 The challenge must contain sufficient freshness to prevent a previously observed proof from simply being replayed as a new proof.
 
@@ -1178,86 +1192,66 @@ They are not encryption rules.
 
 ---
 
-## 26. Workflow: Establish an Encrypted Peer Session
+## 26. Workflow: Establish Confidential Peer Communication
 
-Two connected CR2SE peers may choose to protect application content exchanged during their connection.
+Every CR2SE version 1 network connection already performs the mandatory
+handshake in `Network.md`. That handshake authenticates both identities,
+performs an ephemeral X25519 exchange, and integrity-protects every later frame.
+It deliberately leaves frame payloads visible.
 
-Encryption is not automatically enabled merely because a TCP connection exists.
-
-The peers first authenticate the identities participating in the encrypted exchange.
-
-They then perform authenticated key agreement.
-
-The general workflow is:
+Two connected peers may additionally encrypt application content when they
+require confidentiality:
 
 ```text
 Peer A                                  Peer B
 
-        ordinary CR2SE connection
-<======================================>
+   authenticated, integrity-protected CR2SE connection
+<======================================================>
 
-        identity information
-<-------------------------------------->
+       application encryption negotiation
+<------------------------------------------------------>
 
-        identity information
---------------------------------------->
+       application encryption negotiation
+------------------------------------------------------->
 
-        identity proof
-<-------------------------------------->
+       derive distinct encryption keys locally
 
-        identity proof
---------------------------------------->
-
-        ephemeral key exchange
-<-------------------------------------->
-
-        ephemeral key exchange
---------------------------------------->
-
-        authenticate key exchange
-<-------------------------------------->
-
-        authenticate key exchange
---------------------------------------->
-
-       derive shared session keys
-                 locally
-
-        encrypted application content
-<======================================>
+        encrypted application payloads
+<======================================================>
 ```
 
-Ephemeral X25519 keys should be used for session establishment rather than directly using the persistent encryption private keys as session keys.
+The application protocol must define the exact negotiation messages, encrypted
+representation, key-confirmation behavior, and authenticated context. It may
+use the persistent identity-encryption workflow defined in this document or a
+new ephemeral X25519 exchange bound to the already authenticated connection.
 
-The ephemeral key exchange must be cryptographically authenticated using the peers' Ed25519 identities.
+Application encryption keys must be cryptographically distinct from the
+network connection-integrity keys. An implementation must not reuse a network
+integrity key, nonce prefix, or implicit frame sequence number for content
+encryption.
 
-This prevents an intermediary from replacing the ephemeral public keys and establishing separate secrets with each peer.
-
-The exact connection-level negotiation messages and their encoding belong to the CR2SE operation that establishes encrypted communication.
-
-This document defines the required cryptographic properties:
+The additional encryption must provide:
 
 ```text
-both identities are authenticated
-
-ephemeral key exchange is bound to those identities
-
-both peers derive the required session secret
-
-application content is authenticated and encrypted
-
-replayed authentication exchanges are rejected
+the intended identities are already authenticated;
+encryption keys are bound to the intended operation and identities;
+application content is authenticated and encrypted;
+nonces are unique for their key;
+and replayed encryption negotiations or ciphertext are rejected where the
+application semantics require freshness.
 ```
 
 ---
 
-## 27. Encryption Is Above the Network Layer
+## 27. Content Encryption Is Above the Network Layer
 
-The CR2SE network framing layer does not need to understand encryption.
+`Network.md` defines how CR2SE frames are transferred and how their plaintext
+headers and payloads receive mandatory connection-level integrity protection.
+The framing layer does not assign confidentiality or application meaning to a
+payload.
 
-`Network.md` defines how CR2SE frames are transferred.
-
-Encryption operates on the content carried by the appropriate CR2SE operation or service.
+Content encryption operates on the bytes carried by the appropriate CR2SE
+operation or service.
 
 Conceptually:
 
@@ -1279,7 +1273,8 @@ CR2SE Network frames
 TCP
 ```
 
-The network layer therefore continues to transport bytes normally.
+The network layer therefore continues to transport and integrity-protect bytes
+normally.
 
 It does not need to determine whether those bytes represent:
 
@@ -1294,7 +1289,10 @@ or another representation
 
 This separation is intentional.
 
-A CR2SE implementation must not require modifications to the basic network frame format merely because an application or service chooses to encrypt its content.
+A CR2SE implementation must not require modifications to the basic network
+frame format merely because an application or service chooses to encrypt its
+content. The resulting ciphertext is an ordinary network payload and also
+receives the mandatory connection integrity tag.
 
 ---
 
@@ -1477,11 +1475,13 @@ X25519
 HKDF-SHA-256
     |
     +---- derive encryption keys
+    +---- derive network integrity keys and nonce prefixes
 
 XChaCha20-Poly1305
     |
     +---- encrypt bytes
     +---- authenticate encrypted bytes
+    +---- authenticate visible network frames with empty plaintext
 
 SHA-256
     |
@@ -1503,6 +1503,8 @@ The CR2SE version 1 identity keeps these purposes explicit.
 CR2SE does not make encryption mandatory for ordinary data.
 
 Plaintext communication and plaintext storage are valid CR2SE behavior.
+Plaintext network frames still receive the mandatory connection integrity tag
+defined by `Network.md`.
 
 Cryptography is used when a protocol operation requires identity, authorization, confidentiality, integrity, or secure key establishment.
 
@@ -1545,8 +1547,11 @@ Encrypted data may be handled by intermediaries without granting those intermedi
 
 Large data is encrypted incrementally using independently authenticated encryption units, while the service responsible for the object defines chunking and object layout.
 
-Encrypted peer communication is implemented above the CR2SE network transport layer.
+Confidential peer communication is implemented above the CR2SE network
+transport layer.
 
-The network layer remains responsible only for transporting CR2SE frames and their bytes.
+The network layer remains responsible for transporting CR2SE frames,
+authenticating the connected identities, and integrity-protecting every
+post-handshake frame. It does not provide payload confidentiality.
 
 This separation allows CR2SE to support both public resource sharing and private communication without forcing either model onto all services.

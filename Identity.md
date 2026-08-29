@@ -178,7 +178,11 @@ The corresponding private key must remain secret.
 
 A peer can use the public key to verify cryptographic signatures produced by the corresponding private key.
 
-The exact challenge, signature, and peer-authentication exchanges used when establishing a CR2SE connection are defined by the CR2SE encryption/authentication layer.
+The exact nonce, transcript, signature, ephemeral key exchange, and
+peer-authentication messages used when establishing a CR2SE connection are
+defined by `Network.md`. A service may use the authenticated remote identity
+recorded for that connection without repeating the identity handshake for every
+stream.
 
 This document defines the identity itself, not the complete authentication handshake.
 
@@ -331,7 +335,9 @@ Matching the ID proves only that the public key corresponds to the identifier.
 
 It does not by itself prove that the remote peer possesses the corresponding private key.
 
-Proof of possession requires a cryptographic signature or authentication exchange.
+Proof of possession requires a cryptographic signature or authentication
+exchange. For CR2SE network connections, `Network.md` provides this proof and
+cryptographically binds every later frame to the authenticated connection.
 
 ---
 
@@ -368,7 +374,9 @@ and
 Peer possesses corresponding Private Key
 ```
 
-The exact authentication protocol, challenge format, signature format, replay protection, and connection authentication procedure are defined separately from this document.
+For CR2SE network connections, the exact authentication transcript, fresh
+nonce, signature format, replay protection, session-key derivation, and
+connection-integrity procedure are defined by `Network.md`.
 
 ---
 
@@ -893,6 +901,8 @@ Identity
 Network
     |
     +-- connections
+    +-- mutual identity authentication
+    +-- connection frame integrity
     +-- streams
     +-- data transfer
 
