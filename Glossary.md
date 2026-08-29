@@ -63,6 +63,12 @@ A service-defined procedure through which the requester may evaluate whether the
 **storage lease**
 An accepted CR2SE Storage agreement binding immutable bytes, a requester identity, a provider identity, and an expiration time. Retrieval and renewal are separately charged using current provider offerings, while possession checks sample availability during the active lease. See [Storage](./Storage.md).
 
+**message placement**
+An accepted CR2SE Messaging agreement in which one provider retains one
+sender-signed message for one recipient identity until recovery, removal, or
+expiration. Several placements may contain replicas of the same message. See
+[Messaging](./Messaging.md).
+
 ## Credits and trust
 
 **credit**

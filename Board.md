@@ -1420,6 +1420,12 @@ The Board does not define identity generation, signing keys, identity encoding, 
 
 Those concepts are defined by the CR2SE Identity and Encryption specifications.
 
+The Messaging specification defines the optional top-level
+`identityEncryption` field through which a Board publisher may distribute its
+identity-bound X25519 public key. Its exact encoding and validation rules belong
+to `Messaging.md`; the general unknown-field rule lets older Board readers
+ignore it.
+
 ---
 
 ## 39. Board and Network

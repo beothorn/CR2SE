@@ -30,7 +30,7 @@ Domain terms have consistent meanings across the specifications and are defined 
 - [Storage](./Storage.md) - Paid immutable byte leases, retrieval, renewal, removal, and availability checks
 - [Computation](./Computation.md) - Resource Sharing Service  
 - [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
-- Messaging - Send encrypted messages to any peer, where a peer stores the message for you until recovery  
+- [Messaging](./Messaging.md) - Paid signed message placement, discovery, recipient recovery, delivery status, and optional encryption
 - OpenSocialMessaging - Peers delivery public messages, the client can gather all of them to show as a combined stream of messages 
 - Page - Static HTML Page Hosting Service   
 - Discovery - Find peers and services  

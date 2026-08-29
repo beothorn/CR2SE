@@ -15,12 +15,13 @@ check
 
 The input defines what the requester provides. The output defines what the provider returns when the operation succeeds. The price defines the credit cost agreed before execution. The check defines how the requester may evaluate whether the promised service was provided.
 
-CR2SE version 1 defines four standard service families:
+CR2SE version 1 defines five standard service families:
 
 ```text
 Storage
 Computation
 Public File Sharing
+Messaging
 Page
 ```
 
@@ -825,7 +826,7 @@ Disputes, refunds, compensation, arbitration, and reconciliation after a service
 
 ## 25. Standard Service Families
 
-CR2SE version 1 reserves four standard service families.
+CR2SE version 1 reserves five standard service families.
 
 Their individual specifications define their exact operation identifiers, versions, schemas, offering information, invocation rules, and checks.
 
@@ -856,6 +857,16 @@ piece retrieval, multi-host verification, and the local content check.
 Publication, retention, and finding candidate hosts are separate concerns.
 Their detailed rules belong in `PublicFileSharing.md` and the future Discovery
 specification.
+
+### Messaging
+
+Messaging services retain a sender-signed message for one recipient identity
+until authenticated recovery, sender-authorized removal, or expiration.
+
+The Messaging specification defines redundant placements, recipient discovery,
+recovery receipts, sender-visible status, renewal, optional recipient
+encryption, deterministic prices, early-release credits, and payload checks.
+Its detailed rules belong in `Messaging.md`.
 
 ### Page
 
@@ -893,6 +904,10 @@ Computation
 Public File Sharing
     Hash the canonical manifest or returned file pieces.
     Compare the result with the requested share ID or expected piece hashes.
+
+Messaging
+    Challenge a pending placement for one sender-selected payload byte.
+    Compare the returned byte with the sender's original payload.
 
 Page
     Retrieve an advertised path.
