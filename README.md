@@ -12,7 +12,9 @@ CR2SE principles are:
 - It is expensive for unknown, untrusted peers to reach peers, and impossibly expensive for reaching many untrusted peers  
 - Untrusted is the default instance  
 - Credits may be acquired in other ways (for example payments)  
+- Credits may be distributed however a peer choose, but never give another peer infinite credits.
 - CR2SE can be a channel for any non real time service  
+- Everything costs credits. This is by design to prevent abuse on all services.  
 
 Domain terms have consistent meanings across the specifications and are defined in the [CR2SE Glossary](./Glossary.md).
 
@@ -31,6 +33,6 @@ Domain terms have consistent meanings across the specifications and are defined 
 - [Computation](./Computation.md) - Resource Sharing Service  
 - [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
 - [Messaging](./Messaging.md) - Paid signed message placement, discovery, recipient recovery, delivery status, and optional encryption
-- OpenSocialMessaging - Peers delivery public messages, the client can gather all of them to show as a combined stream of messages 
+- [OpenSocialMessaging](./OpenSocialMessaging.md) - Peers delivery public messages, the client can gather all of them to show as a combined stream of messages 
 - Page - Static HTML Page Hosting Service   
 - Discovery - Find peers and services  
