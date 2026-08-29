@@ -15,11 +15,12 @@ check
 
 The input defines what the requester provides. The output defines what the provider returns when the operation succeeds. The price defines the credit cost agreed before execution. The check defines how the requester may evaluate whether the promised service was provided.
 
-CR2SE version 1 defines three standard service families:
+CR2SE version 1 defines four standard service families:
 
 ```text
 Storage
 Computation
+Public File Sharing
 Page
 ```
 
@@ -824,7 +825,7 @@ Disputes, refunds, compensation, arbitration, and reconciliation after a service
 
 ## 25. Standard Service Families
 
-CR2SE version 1 reserves three standard service families.
+CR2SE version 1 reserves four standard service families.
 
 Their individual specifications define their exact operation identifiers, versions, schemas, offering information, invocation rules, and checks.
 
@@ -843,6 +844,18 @@ Computation services execute a defined computation using supplied input and retu
 The Computation specification must define execution semantics, supported computation descriptions, limits, determinism requirements where applicable, result encoding, and verification behavior. Checks may validate the result, repeat the computation, or use computation-specific evidence.
 
 This document does not select a runtime, instruction set, container format, proof system, or scheduling policy. Those belong in the Computation specification.
+
+### Public File Sharing
+
+Public File Sharing services return immutable public files and directory trees
+identified by a canonical manifest hash.
+
+The Public File Sharing specification defines canonical paths and manifests,
+SHA-256 share and piece hashes, deterministic byte-usage pricing, resumable
+piece retrieval, multi-host verification, and the local content check.
+Publication, retention, and finding candidate hosts are separate concerns.
+Their detailed rules belong in `PublicFileSharing.md` and the future Discovery
+specification.
 
 ### Page
 
@@ -876,6 +889,10 @@ Storage
 Computation
     Validate the result according to the computation definition.
     Recompute all or part of a deterministic operation when practical.
+
+Public File Sharing
+    Hash the canonical manifest or returned file pieces.
+    Compare the result with the requested share ID or expected piece hashes.
 
 Page
     Retrieve an advertised path.

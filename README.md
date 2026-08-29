@@ -28,8 +28,8 @@ Domain terms have consistent meanings across the specifications and are defined 
 - [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks  
 - [Glossary](./Glossary.md) - Common domain vocabulary  
 - [Storage](./Storage.md) - Paid immutable byte leases, retrieval, renewal, removal, and availability checks
-- Computation - Resource Sharing Service  
-- PublicFileSharing - Distributed hosting of files with public access  
+- [Computation](./Computation.md) - Resource Sharing Service  
+- [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
 - Messaging - Send encrypted messages to any peer, where a peer stores the message for you until recovery  
 - OpenSocialMessaging - Peers delivery public messages, the client can gather all of them to show as a combined stream of messages 
 - Page - Static HTML Page Hosting Service   
