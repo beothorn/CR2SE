@@ -15,13 +15,14 @@ check
 
 The input defines what the requester provides. The output defines what the provider returns when the operation succeeds. The price defines the credit cost agreed before execution. The check defines how the requester may evaluate whether the promised service was provided.
 
-CR2SE version 1 defines five standard service families:
+CR2SE version 1 defines six standard service families:
 
 ```text
 Storage
 Computation
 Public File Sharing
 Messaging
+Discovery
 Page
 ```
 
@@ -826,7 +827,7 @@ Disputes, refunds, compensation, arbitration, and reconciliation after a service
 
 ## 25. Standard Service Families
 
-CR2SE version 1 reserves five standard service families.
+CR2SE version 1 reserves six standard service families.
 
 Their individual specifications define their exact operation identifiers, versions, schemas, offering information, invocation rules, and checks.
 
@@ -853,10 +854,10 @@ identified by a canonical manifest hash.
 
 The Public File Sharing specification defines canonical paths and manifests,
 SHA-256 share and piece hashes, deterministic byte-usage pricing, resumable
-piece retrieval, multi-host verification, and the local content check.
-Publication, retention, and finding candidate hosts are separate concerns.
-Their detailed rules belong in `PublicFileSharing.md` and the future Discovery
-specification.
+piece retrieval, signed catalog enumeration, multi-host verification, and the
+local content check.
+Publication, retention, and distributed indexing are separate concerns. Their
+detailed rules belong in `PublicFileSharing.md` and `Discovery.md`.
 
 ### Messaging
 
@@ -867,6 +868,18 @@ The Messaging specification defines redundant placements, recipient discovery,
 recovery receipts, sender-visible status, renewal, optional recipient
 encryption, deterministic prices, early-release credits, and payload checks.
 Its detailed rules belong in `Messaging.md`.
+
+### Discovery
+
+Discovery services retain and query signed, expiring identity-address,
+public-share-availability, and published-trust records. They also provide paid
+identity and trust enumeration and candidate-indexer referrals using a
+defined 256-bit XOR distance.
+
+The Discovery specification defines canonical signed records, paid index
+placements, deterministic queries and pagination, iterative lookup, and the
+boundary between bootstrap information and direct credit relationships. Its
+detailed rules belong in `Discovery.md`.
 
 ### Page
 
@@ -908,6 +921,10 @@ Public File Sharing
 Messaging
     Challenge a pending placement for one sender-selected payload byte.
     Compare the returned byte with the sender's original payload.
+
+Discovery
+    Validate returned signed records locally, or retrieve the exact bytes of an
+    accepted record from an active index placement.
 
 Page
     Retrieve an advertised path.

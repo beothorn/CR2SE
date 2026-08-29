@@ -528,7 +528,8 @@ Scanning such a QR code identifies the CR2SE identity.
 
 It does not necessarily provide enough information to locate a currently reachable node using that identity.
 
-Peer discovery may later allow an implementation to locate an identity using only its ID.
+CR2SE Discovery allows an implementation with at least one usable bootstrap
+relationship to look for current signed addresses using only the wanted ID.
 
 ---
 
@@ -607,7 +608,9 @@ A QR code containing an old address may therefore eventually contain obsolete bo
 
 The ID itself remains valid.
 
-Future CR2SE discovery mechanisms may allow nodes to find current addresses for an identity without requiring the original bootstrap address.
+The CR2SE Discovery service allows nodes with another usable bootstrap
+relationship to look for current signed addresses without requiring the
+original bootstrap address. See [Discovery](./Discovery.md).
 
 ---
 
@@ -624,9 +627,11 @@ The binary ID is:
 
 These properties allow the ID to be used by distributed data structures such as DHTs.
 
-For example, a future routing mechanism may calculate distance between IDs using an operation such as XOR.
+The Discovery specification uses an XOR distance between 256-bit IDs for its
+Kademlia-inspired candidate ordering.
 
-The identity specification does not require any particular DHT or peer-discovery algorithm.
+The identity specification itself does not require any particular distributed
+hash table or peer-discovery algorithm.
 
 Discovery is a separate protocol concern.
 

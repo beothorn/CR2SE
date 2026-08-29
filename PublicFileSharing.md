@@ -31,7 +31,8 @@ Common terms such as **identity**, **service requester**, **service provider**,
 **offering**, **credit issuer**, **check**, and **trust** are defined in the
 [CR2SE Glossary](./Glossary.md). Common service and pricing rules are defined in
 [Services](./Services.md), Board advertisements in [Board](./Board.md), and
-transport-independent invocation in [NodeApi](./NodeApi.md).
+transport-independent invocation in [NodeApi](./NodeApi.md). Signed share
+records and distributed lookup are defined in [Discovery](./Discovery.md).
 
 ---
 
@@ -45,7 +46,7 @@ serviceVersion: 1
 pricing model:  cr2se.public-file-sharing.v1
 ```
 
-It has two operations:
+It has three operations:
 
 ```text
 manifest
@@ -53,13 +54,17 @@ manifest
 
 download
     Return one or more consecutive pieces of one file in that share.
+
+catalog
+    Return one page of the host's current signed share-availability records.
 ```
 
 The `manifest` operation is normally performed first. It gives the downloader
 the paths, file sizes, piece layout, and hashes needed to construct and verify
 later `download` operations.
 
-Version 1 defines retrieval from a host that possesses the complete share. It
+Version 1 defines retrieval from a host that possesses the complete share and
+paid enumeration of shares that host chooses to advertise. It
 does not advertise incomplete shares or individual piece availability. Several
 complete hosts may have the same share, and a downloader may retrieve different
 piece ranges from different hosts.
@@ -413,7 +418,7 @@ requires retention. Removal affects future requests only. A `download`
 operation accepted while the share was hosted must still complete or be a
 service failure.
 
-Before accepting either operation, the provider looks up the exact 32-byte
+Before accepting either retrieval operation, the provider looks up the exact 32-byte
 share ID. If it does not currently host the complete share, it returns a
 `shareUnavailable` rejection. This is a pre-acceptance rejection, reveals no
 manifest, and is not charged.
@@ -460,10 +465,13 @@ transfer. Floating-point values must not be used.
 `minimumPrice` is a `uint64` in `1 .. 2^64-1`. It is the minimum price of each
 accepted `manifest` or `download` operation.
 
+`catalogPrice` is the exact `uint64` price of one successful `catalog`
+operation and must be in `1 .. 2^64-1`.
+
 `manifestByteFactor` is the rate per manifest byte returned by `manifest`.
 `downloadByteFactor` is the rate per file byte returned by `download`. Either
-numerator may be zero; `minimumPrice` still makes every accepted invocation
-cost at least one credit.
+numerator may be zero; `minimumPrice` still makes every accepted retrieval
+invocation cost at least one credit.
 
 ---
 
@@ -481,6 +489,17 @@ maximumDownloadBytes
 
 maximumFiles
     Largest fileCount accepted in a hosted manifest. Range: 1 .. 2^32-1.
+
+maximumCatalogResults
+    Largest catalog page the offering will return. Range: 1 .. 2^32-1.
+
+maximumCatalogRecordLifetimeSeconds
+    Longest expiresAt minus issuedAt accepted in a catalog share record.
+    Range: 1 .. 2^64-1.
+
+maximumCatalogClockSkewSeconds
+    Greatest amount by which a catalog record's issuedAt may be ahead of the
+    provider's catalogAt time. Range: 0 .. 2^64-1.
 ```
 
 Seventy bytes is the smallest possible manifest: the 17-byte header plus one
@@ -493,7 +512,7 @@ A complete version 1 provided or wanted offering has this form:
   "id": "public-files",
   "service": "cr2se.public-file-sharing",
   "serviceVersion": 1,
-  "description": "Return canonical manifests and hash-verified pieces of publicly hosted immutable files.",
+  "description": "List signed public-share claims and return canonical manifests and hash-verified pieces of hosted immutable files.",
   "creditIssuer": "PROVIDER_ID",
   "pricing": {
     "model": "cr2se.public-file-sharing.v1",
@@ -505,12 +524,16 @@ A complete version 1 provided or wanted offering has this form:
     "downloadByteFactor": {
       "numerator": 1,
       "denominator": 1000000
-    }
+    },
+    "catalogPrice": 1
   },
   "info": {
     "maximumManifestBytes": 16777216,
     "maximumDownloadBytes": 16777216,
-    "maximumFiles": 100000
+    "maximumFiles": 100000,
+    "maximumCatalogResults": 1000,
+    "maximumCatalogRecordLifetimeSeconds": 2592000,
+    "maximumCatalogClockSkewSeconds": 300
   },
   "preconditions": [
     "cr2se.identity"
@@ -523,8 +546,9 @@ not use the fixed Board `price` field. It must contain every pricing and `info`
 field shown above. It must contain the `cr2se.identity` precondition because
 the identities must agree which issuer's credits are transferred.
 
-An offering advertises general retrieval terms, not a list of hosted share
-IDs. Large catalogs belong in discovery mechanisms rather than Boards. A
+An offering advertises general retrieval and catalog terms, not a list of
+hosted share IDs. Catalog entries belong in the paid `catalog` operation and
+distributed indexes belong in Discovery rather than Boards. A
 provider must not claim to host a particular share merely because it advertises
 this service.
 
@@ -540,6 +564,7 @@ D = exact number of file bytes for a download operation
 M = minimumPrice
 A.n / A.d = manifestByteFactor
 B.n / B.d = downloadByteFactor
+C = catalogPrice
 ```
 
 `ceil(value)` means the smallest integer greater than or equal to `value`, and
@@ -550,6 +575,7 @@ The prices are:
 ```text
 manifestPrice = max(M, ceil(N * A.n / A.d))
 downloadPrice = max(M, ceil(D * B.n / B.d))
+catalogPrice = C
 ```
 
 For positive integers, an implementation may calculate:
@@ -577,6 +603,10 @@ must verify that its byte length matches the quotation.
 For `download`, both peers derive `D` from the already verified manifest and
 the requested piece range before acceptance. They must agree on the same exact
 price before any piece data is returned.
+
+For `catalog`, both peers use the advertised fixed `catalogPrice` before the
+provider constructs the page. The price does not depend on whether the page is
+empty or contains the requested maximum number of results.
 
 ---
 
@@ -694,7 +724,69 @@ retry is a new invocation with a new price.
 
 ---
 
-## 14. Verification check
+## 14. Catalog operation
+
+`catalog` lets an authenticated requester enumerate the shares that this host
+currently chooses to advertise. It returns signed Discovery share records, not
+manifests or file bytes.
+
+The logical input is:
+
+```text
+operation:    "catalog"
+afterShareId: bytes, exactly 32 bytes, optional
+limit:        uint32
+```
+
+`limit` must be in `1 .. maximumCatalogResults`. The provider selects exactly
+one current latest positive share record for every advertised share. Every
+record must be signed by the authenticated provider identity and must use the
+canonical encoding defined in [Discovery](./Discovery.md).
+
+Records are ordered by `shareId` using unsigned lexicographic byte order. The
+optional cursor is exclusive. With no cursor the provider returns the first
+page; with a cursor it returns records whose share IDs are strictly greater
+than `afterShareId`.
+
+The successful output is:
+
+```text
+operation:    "catalog"
+catalogAt:    uint64 Unix seconds
+shareRecords: array of canonical encoded Discovery share records
+more:         bool
+price:        uint64 credits
+```
+
+`catalogAt` is the provider's Unix time when it constructs the page. Every
+returned record must satisfy:
+
+```text
+hostId = authenticated provider identity
+available = true
+issuedAt <= catalogAt + maximumCatalogClockSkewSeconds
+expiresAt > catalogAt
+expiresAt - issuedAt <= maximumCatalogRecordLifetimeSeconds
+```
+
+All arithmetic must be overflow-checked. `more` is true only when another
+advertised share record existed immediately after the last returned record
+when the page was produced. An empty page is a successful, charged result.
+
+The catalog is not a frozen snapshot. A host may add or remove shares while a
+requester paginates. The requester may repeat enumeration and deduplicate by
+`shareId` and Discovery record ID. A host withdrawing a share should also
+publish a newer negative Discovery share record to indexers that may retain its
+older positive claim.
+
+The catalog does not prove that a listed share remains available. A requester
+confirms that property by invoking `manifest` or `download`. A host must not
+list a positive record for a share it does not currently host according to
+section 8.
+
+---
+
+## 15. Verification check
 
 The Public File Sharing check is local verification of one successful
 operation. It requires no additional provider message and has no separate
@@ -736,6 +828,26 @@ inconclusive
     unavailable, or local resource limits prevent the check.
 ```
 
+For a `catalog` output, the check input is the requested cursor and limit, the
+authenticated provider ID, `catalogAt`, and the complete returned share-record
+array. Its outcome is:
+
+```text
+pass
+    Every record is a valid canonical positive Discovery share record signed
+    by the provider, all records satisfy the advertised time limits, share IDs
+    are unique and in the required order, and the page respects the cursor and
+    requested limit.
+
+fail
+    Complete output is available, but at least one required property is false.
+
+inconclusive
+    Complete output, request metadata, authenticated provider ID, or required
+    offering limits are unavailable, or local resource limits prevent the
+    check.
+```
+
 The requester calculates the outcome. It must not trust a provider-supplied
 claim that the data passed.
 
@@ -750,7 +862,7 @@ rules.
 
 ---
 
-## 15. Required service definition
+## 16. Required service definition
 
 Every version 1 Public File Sharing offering must expose a definition through
 `service.get`. Its `id` and `description` match the selected Board offering.
@@ -765,43 +877,54 @@ Its logical schema is equivalent to:
   "id": "public-files",
   "service": "cr2se.public-file-sharing",
   "serviceVersion": 1,
-  "description": "Return canonical manifests and hash-verified pieces of publicly hosted immutable files.",
+  "description": "List signed public-share claims and return canonical manifests and hash-verified pieces of hosted immutable files.",
   "input": {
     "type": "object",
     "fields": {
-      "operation": { "type": "string", "description": "Operation: manifest or download." },
-      "shareId": { "type": "bytes", "description": "Exact 32-byte SHA-256 hash of the canonical manifest." },
+      "operation": { "type": "string", "description": "Operation: manifest, download, or catalog." },
+      "shareId": { "type": "bytes", "description": "Exact 32-byte SHA-256 hash of the canonical manifest.", "optional": true },
       "maximumManifestBytes": { "type": "uint64", "description": "Largest manifest byte length accepted by the requester for a manifest operation.", "optional": true },
       "fileIndex": { "type": "uint32", "description": "Zero-based canonical file-record index selected by a download operation.", "optional": true },
       "firstPiece": { "type": "uint32", "description": "Zero-based first piece selected by a download operation.", "optional": true },
-      "pieceCount": { "type": "uint32", "description": "Positive number of consecutive pieces selected by a download operation.", "optional": true }
+      "pieceCount": { "type": "uint32", "description": "Positive number of consecutive pieces selected by a download operation.", "optional": true },
+      "afterShareId": { "type": "bytes", "description": "Exclusive 32-byte share-ID cursor for a catalog operation.", "optional": true },
+      "limit": { "type": "uint32", "description": "Maximum share records requested by a catalog operation.", "optional": true }
     }
   },
   "output": {
     "type": "object",
     "fields": {
-      "operation": { "type": "string", "description": "Completed operation: manifest or download." },
-      "shareId": { "type": "bytes", "description": "Exact 32-byte share ID selected by the invocation." },
+      "operation": { "type": "string", "description": "Completed operation: manifest, download, or catalog." },
+      "shareId": { "type": "bytes", "description": "Exact 32-byte share ID selected by a retrieval invocation.", "optional": true },
       "manifest": { "type": "bytes", "description": "Canonical version 1 manifest returned by a manifest operation.", "optional": true },
       "fileIndex": { "type": "uint32", "description": "Zero-based file-record index returned by a download operation.", "optional": true },
       "firstPiece": { "type": "uint32", "description": "Zero-based first returned piece index.", "optional": true },
       "pieceCount": { "type": "uint32", "description": "Number of consecutive pieces represented by data.", "optional": true },
       "data": { "type": "bytes", "description": "Concatenated complete piece bytes returned by a download operation.", "optional": true },
+      "catalogAt": { "type": "uint64", "description": "Provider time when a catalog page was constructed.", "optional": true },
+      "shareRecords": { "type": "array", "description": "Canonical signed Discovery share records returned by a catalog operation.", "items": { "type": "bytes" }, "optional": true },
+      "more": { "type": "bool", "description": "Whether another catalog entry existed when the page was produced.", "optional": true },
       "price": { "type": "uint64", "description": "Exact credits charged for the successful operation." }
     }
   },
   "check": {
-    "description": "For manifest, validate its canonical encoding and SHA-256 share ID; for download, validate returned metadata, lengths, and every SHA-256 piece hash against the manifest.",
+    "description": "For manifest, validate canonical encoding and share ID; for download, validate metadata, lengths, and piece hashes; for catalog, validate provider-signed Discovery share records, time limits, cursor, and ordering.",
     "input": {
       "type": "object",
       "fields": {
-        "operation": { "type": "string", "description": "Checked operation: manifest or download." },
-        "shareId": { "type": "bytes", "description": "Requested 32-byte share ID." },
+        "operation": { "type": "string", "description": "Checked operation: manifest, download, or catalog." },
+        "shareId": { "type": "bytes", "description": "Requested 32-byte share ID for a retrieval check.", "optional": true },
         "manifest": { "type": "bytes", "description": "Returned or previously validated canonical manifest.", "optional": true },
         "fileIndex": { "type": "uint32", "description": "Checked zero-based file-record index for download.", "optional": true },
         "firstPiece": { "type": "uint32", "description": "Checked zero-based first piece index for download.", "optional": true },
         "pieceCount": { "type": "uint32", "description": "Checked number of consecutive pieces for download.", "optional": true },
-        "data": { "type": "bytes", "description": "Complete returned piece data checked for download.", "optional": true }
+        "data": { "type": "bytes", "description": "Complete returned piece data checked for download.", "optional": true },
+        "providerId": { "type": "bytes", "description": "Authenticated 32-byte provider identity checked for catalog record signatures.", "optional": true },
+        "afterShareId": { "type": "bytes", "description": "Original exclusive catalog cursor when supplied.", "optional": true },
+        "limit": { "type": "uint32", "description": "Original catalog page limit.", "optional": true },
+        "catalogAt": { "type": "uint64", "description": "Provider time returned with the catalog page.", "optional": true },
+        "shareRecords": { "type": "array", "description": "Complete catalog share-record array to check.", "items": { "type": "bytes" }, "optional": true },
+        "more": { "type": "bool", "description": "Catalog continuation indicator returned with the checked page.", "optional": true }
       }
     },
     "output": {
@@ -822,6 +945,9 @@ manifest
 
 download
     requires operation, shareId, fileIndex, firstPiece, pieceCount
+
+catalog
+    requires operation, limit, and optionally afterShareId
 ```
 
 A known field listed for the other operation must be rejected. Unknown object
@@ -836,7 +962,7 @@ logical value or piece boundaries.
 
 ---
 
-## 16. Example download
+## 17. Example download
 
 Suppose a validated manifest describes a file of 40,000 bytes with a piece
 size of 16,384 bytes. Its pieces are:
@@ -865,9 +991,9 @@ manifest.
 
 ---
 
-## 17. Parallelism, resumption, and retries
+## 18. Parallelism, resumption, and retries
 
-Distinct `manifest` and `download` operations are read-only and may run
+Distinct `manifest`, `download`, and `catalog` operations are read-only and may run
 concurrently. A provider may limit concurrent accepted operations according to
 advertised limits, capacity, trust, and local policy.
 
@@ -899,12 +1025,16 @@ same.
 
 ---
 
-## 18. Discovery and links
+## 19. Discovery and links
 
-Discovery is expected to use the 32-byte share ID as the content lookup key.
-The discovery result may identify zero or more candidate hosts. Its format,
-ranking, freshness, privacy, and resistance to false claims belong to the
-Discovery specification.
+Discovery uses the 32-byte share ID to derive its content lookup key. Its result
+may identify zero or more candidate hosts and indexers. Canonical share records,
+ranking, freshness, paid lookup, and resistance to false claims are defined in
+[Discovery](./Discovery.md).
+
+An indexer may invoke `catalog` to learn this host's current positive share
+records and may copy those signed records into other indexes. Catalog access
+does not grant the indexer authority to alter the records.
 
 A discovery claim that a peer hosts a share is not proof. The peer confirms
 availability only by accepting a request and proves returned content only
@@ -918,7 +1048,7 @@ standard CR2SE URI.
 
 ---
 
-## 19. Failure behavior
+## 20. Failure behavior
 
 No successful output is returned, and no charge is permitted, for conditions
 including:
@@ -929,6 +1059,7 @@ unknown operation;
 malformed fields or a share ID of the wrong length;
 operation-specific required field missing;
 known field present where the selected operation forbids it;
+invalid catalog cursor, limit, record, signature, ordering, or time bound;
 shareUnavailable before acceptance;
 manifest or request outside advertised limits;
 invalid file index, piece index, piece count, or derived byte length;
@@ -956,7 +1087,7 @@ policy. Error text is untrusted and is not part of a share's identity.
 
 ---
 
-## 20. Security and implementation guidance
+## 21. Security and implementation guidance
 
 ### Content is untrusted
 
@@ -1020,13 +1151,15 @@ separate authenticated mechanism.
 
 ---
 
-## 21. Interoperability checklist
+## 22. Interoperability checklist
 
 A version 1 implementation is interoperable only if it:
 
 ```text
 uses service cr2se.public-file-sharing at serviceVersion 1;
 uses pricing model cr2se.public-file-sharing.v1;
+supports paid deterministic catalog pagination of provider-signed Discovery
+share records;
 uses SHA-256 raw bytes exactly as defined;
 does not substitute MD5, hexadecimal text, or native hash serialization;
 uses one valid power-of-two piece size for the complete share;
@@ -1044,6 +1177,6 @@ verifies each downloaded piece and each completed file;
 does not charge a pre-acceptance rejection or incomplete service failure;
 exposes the required service definition and local verification check;
 treats manifests, paths, files, discovery claims, and error text as untrusted;
-leaves discovery, publication, retention, authorship, and textual links outside
-version 1 unless another specification defines them.
+leaves distributed discovery, retention, authorship, and textual links outside
+version 1 while limiting catalog publication to signed share claims.
 ```

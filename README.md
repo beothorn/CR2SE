@@ -34,5 +34,5 @@ Domain terms have consistent meanings across the specifications and are defined 
 - [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
 - [Messaging](./Messaging.md) - Paid signed message placement, discovery, recipient recovery, delivery status, and optional encryption
 - [OpenSocialMessaging](./OpenSocialMessaging.md) - Peers delivery public messages, the client can gather all of them to show as a combined stream of messages 
-- Page - Static HTML Page Hosting Service   
-- Discovery - Find peers and services  
+- [Page](./Page.md) - Static HTML Page Hosting Service   
+- [Discovery](./Discovery.md) - Find peers and services  

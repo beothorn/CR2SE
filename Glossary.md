@@ -69,6 +69,19 @@ sender-signed message for one recipient identity until recovery, removal, or
 expiration. Several placements may contain replicas of the same message. See
 [Messaging](./Messaging.md).
 
+**discovery record**
+A canonical, signed, expiring identity-address, public-share-availability, or
+published-trust statement that peers may validate and copy independently. See
+[Discovery](./Discovery.md).
+
+**discovery index**
+One identity's local collection of discovery records and identities learned
+from authenticated connections. It is not a global directory or membership
+list. See [Discovery](./Discovery.md).
+
+**indexer**
+An identity that provides the CR2SE Discovery service using a discovery index.
+
 ## Credits and trust
 
 **credit**
