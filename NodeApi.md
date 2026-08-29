@@ -967,7 +967,10 @@ All three values are supplied so the remote peer can reject a stale or inconsist
 
 ## 26. `service.invoke`
 
-`service.invoke` asks a connected node to execute one of its advertised services.
+`service.invoke` asks a connected node to execute a selected service. Every
+charged invocation selects a currently advertised offering and agrees the price
+that applies to that invocation. A stateful service specification may define
+arguments that refer to an accepted ongoing service, such as a Storage lease.
 
 Example:
 
@@ -985,7 +988,9 @@ Example:
 }
 ```
 
-The selected Board offering determines the credit issuer, price, preconditions, and offering-specific terms. Its separately retrieved service definition determines the input, output, and check contract. The remote peer must reject the invocation if those identifiers do not select the same currently advertised offering.
+The selected Board offering determines the credit issuer, fixed price or pricing model, preconditions, and offering-specific terms. Its separately retrieved service definition determines the input, output, and check contract. For an initial invocation, the remote peer must reject the invocation if those identifiers do not select the same currently advertised offering.
+
+For a service-defined follow-up operation, the remote peer validates the selected current offering and also validates the referenced ongoing-service record and authorization. For example, `cr2se.storage` retrieval and renewal reference an active lease but use the pricing terms of the currently selected compatible Storage offering. The offering used to create the lease need not still exist and does not fix the price of the new invocation.
 
 The `arguments` field may contain any valid JSON value accepted by that service.
 

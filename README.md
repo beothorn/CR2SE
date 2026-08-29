@@ -27,7 +27,7 @@ Domain terms have consistent meanings across the specifications and are defined 
 - [Board](./Board.md) - Compact service offerings, wanted services, payment terms, and metadata  
 - [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks  
 - [Glossary](./Glossary.md) - Common domain vocabulary  
-- Storage - Resource Sharing Service  
+- [Storage](./Storage.md) - Paid immutable byte leases, retrieval, renewal, removal, and availability checks
 - Computation - Resource Sharing Service  
 - PublicFileSharing - Distributed hosting of files with public access  
 - Messaging - Send encrypted messages to any peer, where a peer stores the message for you until recovery  

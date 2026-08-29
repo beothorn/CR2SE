@@ -191,10 +191,10 @@ The following partial example focuses only on service direction and identity; a 
   "providedServices": [],
   "wantedServices": [
     {
-      "id": "storage-1g-10d",
-      "service": "cr2se.storage.store",
+      "id": "storage-flexible",
+      "service": "cr2se.storage",
       "serviceVersion": 1,
-      "description": "Store up to 1 GB for 10 days."
+      "description": "Store requester-selected data for a requester-selected period."
     }
   ]
 }
@@ -230,7 +230,7 @@ Each element of `providedServices` or `wantedServices` is called an **offering**
 
 An offering describes one particular way in which a service may be exchanged.
 
-For example, these may be separate offerings:
+For example, a fixed-package storage service might advertise separate offerings:
 
 ```text
 store up to 1 GB for 10 days for 5 credits;
@@ -242,7 +242,7 @@ store up to 10 GB for 10 days for 40 credits.
 
 Even though all three perform storage, they represent different advertised terms.
 
-They must therefore be represented as separate offerings.
+Such fixed packages must therefore be represented as separate offerings. The standard `cr2se.storage` service instead defines one bounded, deterministic variable-price offering so a requester can choose its byte count and retention time.
 
 For example:
 
@@ -251,17 +251,17 @@ For example:
   "providedServices": [
     {
       "id": "store-1g-10d",
-      "service": "cr2se.storage.store",
+      "service": "example.storage.fixed",
       "serviceVersion": 1
     },
     {
       "id": "store-1g-30d",
-      "service": "cr2se.storage.store",
+      "service": "example.storage.fixed",
       "serviceVersion": 1
     },
     {
       "id": "store-10g-10d",
-      "service": "cr2se.storage.store",
+      "service": "example.storage.fixed",
       "serviceVersion": 1
     }
   ]
@@ -299,12 +299,12 @@ For example, this is invalid:
   "providedServices": [
     {
       "id": "storage",
-      "service": "cr2se.storage.store",
+      "service": "cr2se.storage",
       "serviceVersion": 1
     },
     {
       "id": "storage",
-      "service": "cr2se.storage.store",
+      "service": "cr2se.storage",
       "serviceVersion": 1
     }
   ]
@@ -340,7 +340,7 @@ For example:
 
 ```json
 {
-  "service": "cr2se.storage.store",
+  "service": "cr2se.storage",
   "serviceVersion": 1
 }
 ```
@@ -367,12 +367,12 @@ For example:
 [
   {
     "id": "store-small-short",
-    "service": "cr2se.storage.store",
+    "service": "cr2se.storage",
     "serviceVersion": 1
   },
   {
     "id": "store-small-long",
-    "service": "cr2se.storage.store",
+    "service": "cr2se.storage",
     "serviceVersion": 1
   }
 ]
@@ -401,7 +401,7 @@ are reserved for services defined by CR2SE specifications.
 For example:
 
 ```text
-cr2se.storage.store
+cr2se.storage
 ```
 
 may be defined by the CR2SE Storage specification.
@@ -433,7 +433,7 @@ Every offering must contain a human-readable `description`.
 For example:
 
 ```json
-"description": "Store up to 1 GB of data for 10 days."
+"description": "Store requester-selected data for a requester-selected period."
 ```
 
 The description is a non-empty UTF-8 string.
@@ -452,7 +452,7 @@ Programs must not parse the description to redefine the behavior of a standard C
 
 For a custom service, the description helps users and automated agents decide whether to retrieve its full definition. It does not replace the separately retrievable `input`, `output`, and `check` definitions or service-specific information.
 
-For example, a Storage specification may define machine-readable fields describing storage size and retention period.
+For example, the Storage specification defines machine-readable size and retention limits plus a deterministic pricing model.
 
 The description may explain those terms in more detail for humans.
 
@@ -472,7 +472,8 @@ For example:
 {
   "info": {
     "maximumBytes": 1000000000,
-    "periodDays": 10
+    "minimumRetentionSeconds": 3600,
+    "maximumRetentionSeconds": 2592000
   }
 }
 ```
@@ -485,7 +486,7 @@ For example:
 
 ```text
 maximumBytes
-periodDays
+minimumRetentionSeconds
 algorithm
 resolution
 region
@@ -503,11 +504,11 @@ An implementation that does not understand the service-specific information may 
 
 ---
 
-## 13. Different Terms Are Different Offerings
+## 13. Different Terms and Pricing Models
 
 A single offering should describe one coherent set of service terms.
 
-Different pricing or substantially different service conditions should normally be represented as different offerings.
+Substantially different service conditions or pricing models should normally be represented as different offerings. A service whose specification defines deterministic variable pricing may use one offering for a bounded range of requester-selected inputs.
 
 For example:
 
@@ -516,7 +517,7 @@ For example:
   "providedServices": [
     {
       "id": "storage-1g-10d",
-      "service": "cr2se.storage.store",
+      "service": "example.storage.fixed",
       "serviceVersion": 1,
       "description": "Store up to 1 GB for 10 days.",
       "info": {
@@ -526,7 +527,7 @@ For example:
     },
     {
       "id": "storage-1g-30d",
-      "service": "cr2se.storage.store",
+      "service": "example.storage.fixed",
       "serviceVersion": 1,
       "description": "Store up to 1 GB for 30 days.",
       "info": {
@@ -538,7 +539,7 @@ For example:
 }
 ```
 
-This is preferred over creating one offering containing a complex price table when the alternatives can naturally be described as independent offerings.
+Separate offerings are preferred over an ad hoc price table when the alternatives can naturally be described independently. A standard service-defined pricing model is not an ad hoc price table: its specification defines the exact fields, arithmetic, limits, and rounding shared by all implementations.
 
 The service specification determines which differences are significant enough to require separate offerings.
 
@@ -639,7 +640,7 @@ Suppose Alice publishes:
 ```json
 {
   "id": "storage",
-  "service": "cr2se.storage.store",
+  "service": "example.storage.fixed",
   "serviceVersion": 1,
   "creditIssuer": "ALICE_ID",
   "price": 5
@@ -670,7 +671,14 @@ How Alice obtained those Bob credits is a Ledger concern and does not affect the
 
 ## 17. Price
 
-Every offering must contain a fixed advertised credit `price`.
+Every offering must contain exactly one of:
+
+```text
+price
+pricing
+```
+
+`price` is a fixed advertised credit price.
 
 For example:
 
@@ -715,6 +723,17 @@ Therefore values such as:
 
 are invalid CR2SE credit prices.
 
+`pricing` is a JSON object describing a deterministic variable-price model. It must contain:
+
+```text
+model
+    a non-empty string identifying the exact pricing model and version
+```
+
+The remaining fields and calculation are defined by the selected service specification. For example, the Storage specification defines `cr2se.storage.v1`, whose exact rational factors calculate a price from requested bytes and time.
+
+An implementation that does not understand the named pricing model may display the offering, but must not calculate, accept, or invoke it. Unknown pricing models do not make unrelated Board offerings invalid.
+
 ---
 
 ## 18. Minimum Price
@@ -729,11 +748,11 @@ A price of zero is invalid.
 
 This remains true when the identities have maximum trust in each other or are controlled by the same operator. Requiring a nonzero price is an anti-abuse property of CR2SE.
 
-Identities that want effectively unrestricted cooperation may issue each other sufficiently large credit balances. They must still use service offerings priced at one credit or more.
+Identities that want effectively unrestricted cooperation may issue each other sufficiently large credit balances. They must still use service operations whose fixed or calculated final price is one credit or more.
 
 ---
 
-## 19. Fixed Offering Price
+## 19. Fixed and Calculated Prices
 
 The `price` field is the price of the offering described by that Board entry.
 
@@ -742,7 +761,7 @@ For example:
 ```json
 {
   "id": "storage-1g-10d",
-  "service": "cr2se.storage.store",
+  "service": "example.storage.fixed",
   "serviceVersion": 1,
   "creditIssuer": "ALICE_ID",
   "price": 5,
@@ -756,7 +775,7 @@ means that the advertised service variant costs:
 5 Alice credits
 ```
 
-The Board does not interpret this as:
+For a fixed-price offering, the Board does not interpret this as:
 
 ```text
 5 credits per byte
@@ -770,6 +789,44 @@ or:
 
 or any other implicit pricing formula.
 
+A variable-price offering instead names an explicit service-defined model. The
+following Storage example uses the factor representation defined in
+[Storage](./Storage.md): `numerator` is a number of credits and `denominator` is
+the number of applicable bytes or byte-seconds covered by that rate. Thus
+`1 / 1000000` means one credit per one million applicable units.
+
+```json
+{
+  "id": "storage-flexible",
+  "service": "cr2se.storage",
+  "serviceVersion": 1,
+  "creditIssuer": "ALICE_ID",
+  "pricing": {
+    "model": "cr2se.storage.v1",
+    "minimumPrice": 1,
+    "byteUsageFactor": { "numerator": 1, "denominator": 1000000 },
+    "byteStorageDurationFactor": { "numerator": 1, "denominator": 86400000000 },
+    "retrievalByteUsageFactor": { "numerator": 1, "denominator": 1000000 },
+    "renewalByteStorageDurationFactor": { "numerator": 1, "denominator": 86400000000 },
+    "removePrice": 1
+  },
+  "checkPrice": 1,
+  "preconditions": [
+    "cr2se.identity"
+  ],
+  "info": {
+    "maximumBytes": 1000000000,
+    "minimumRetentionSeconds": 3600,
+    "maximumRetentionSeconds": 2592000,
+    "maximumTotalRetentionSeconds": 31536000,
+    "maximumRetrieveBytes": 1000000000,
+    "checkResponseSeconds": 30
+  }
+}
+```
+
+The named model, rather than the Board layer, gives these fields their normative meaning. The requester chooses valid input within the advertised limits, and both peers calculate the same integer price before accepting the operation.
+
 If a service has multiple useful combinations of terms and prices, they may be advertised as several offerings.
 
 For example:
@@ -778,7 +835,7 @@ For example:
 [
   {
     "id": "storage-1g-10d",
-    "service": "cr2se.storage.store",
+    "service": "example.storage.fixed",
     "serviceVersion": 1,
     "creditIssuer": "ALICE_ID",
     "price": 5,
@@ -789,7 +846,7 @@ For example:
   },
   {
     "id": "storage-1g-30d",
-    "service": "cr2se.storage.store",
+    "service": "example.storage.fixed",
     "serviceVersion": 1,
     "creditIssuer": "ALICE_ID",
     "price": 12,
@@ -801,19 +858,19 @@ For example:
 ]
 ```
 
-The Storage specification determines the exact meaning of fields such as `maximumBytes` and `periodDays`.
+The custom service definition determines the exact meaning of these illustrative fixed-package fields. The standard Storage service instead uses the explicit variable model shown above.
 
 The Board only provides the common mechanism for advertising the variants.
 
 ---
 
-## 20. Price Must Be Known From the Board
+## 20. Price Must Be Determinable Before Execution
 
-The Board price is fixed for the complete offering described by that entry.
+For a fixed-price offering, the Board price is fixed for the complete offering. For a variable-price offering, the Board and the service specification together must contain everything required to calculate one exact final price from the validated invocation input.
 
-An offering must not omit `price` and determine an unbounded final cost after execution. If a service needs several resource levels or cost choices, the Board publisher must advertise separate offerings with fixed prices or define a bounded unit of work as one invocation.
+An offering must not leave its price discretionary, depend on undisclosed provider state, or determine an unbounded final cost after execution. Variable pricing must advertise bounded inputs and a deterministic model. The calculated price must fit the CR2SE `uint64` credit range.
 
-The selected price and credit issuer must be known and accepted before execution begins. If a cached Board is stale and the provider no longer accepts its advertised terms, the provider must reject the invocation rather than execute it at an undisclosed price.
+The exact fixed or calculated price and credit issuer must be known and accepted before execution begins. Metadata needed to calculate a streamed operation's price may be exchanged first, but the provider must not begin the chargeable work or accept a large body until price agreement. If a cached Board is stale and the provider no longer accepts its advertised terms, the provider must reject the invocation rather than execute it at an undisclosed price.
 
 ---
 
@@ -836,7 +893,7 @@ The definition's `id`, `service`, `serviceVersion`, and `description` must match
 
 Every named field in the input, output, and check schemas must contain a non-empty `description`, including fields in nested objects. A wanted custom service definition must be clear enough that an unfamiliar implementation, including an AI-assisted implementation, can implement it after retrieving the definition.
 
-Two offerings with the same `service` and `serviceVersion` must use the same logical input, output, success, failure, and check definitions. Offering-specific terms such as capacity, duration, price, and preconditions remain on the Board and may differ.
+Two offerings with the same `service` and `serviceVersion` must use the same logical input, output, success, failure, and check definitions. Offering-specific terms such as capacity, duration, fixed price or pricing model, and preconditions remain on the Board and may differ.
 
 A Board remains valid when a definition uses a schema type that the client does not understand. The client may still display the Board summary, but it must not claim to understand or invoke that service definition.
 
@@ -1025,54 +1082,39 @@ The exact storage fields and semantics belong to `Storage.md`.
 
 ```json
 {
-  "id": "store-1g-10d",
-  "service": "cr2se.storage.store",
+  "id": "storage-flexible",
+  "service": "cr2se.storage",
   "serviceVersion": 1,
-  "description": "Store up to 1 GB for 10 days.",
+  "description": "Store requester-selected data for a requester-selected period.",
   "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
-  "price": 5,
+  "pricing": {
+    "model": "cr2se.storage.v1",
+    "minimumPrice": 1,
+    "byteUsageFactor": { "numerator": 1, "denominator": 1000000 },
+    "byteStorageDurationFactor": { "numerator": 1, "denominator": 86400000000 },
+    "retrievalByteUsageFactor": { "numerator": 1, "denominator": 1000000 },
+    "renewalByteStorageDurationFactor": { "numerator": 1, "denominator": 86400000000 },
+    "removePrice": 1
+  },
+  "checkPrice": 1,
   "preconditions": [
     "cr2se.identity"
   ],
   "info": {
     "maximumBytes": 1000000000,
-    "periodDays": 10
+    "minimumRetentionSeconds": 3600,
+    "maximumRetentionSeconds": 2592000,
+    "maximumTotalRetentionSeconds": 31536000,
+    "maximumRetrieveBytes": 1000000000,
+    "checkResponseSeconds": 30
   }
 }
 ```
 
-Another storage variant may be:
-
-```json
-{
-  "id": "store-1g-30d",
-  "service": "cr2se.storage.store",
-  "serviceVersion": 1,
-  "description": "Store up to 1 GB for 30 days.",
-  "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
-  "price": 12,
-  "info": {
-    "maximumBytes": 1000000000,
-    "periodDays": 30
-  }
-}
-```
-
-These are separate offerings.
-
-There is no Board-level concept such as:
-
-```text
-pricePerByte
-```
-
-or:
-
-```text
-pricePerDay
-```
-
-unless a particular service specification explicitly introduces such information for that service.
+The requester supplies an exact size and retention period within these limits.
+The Storage specification defines the price calculation, including exact
+rational arithmetic and rounding. Retrieval and renewal are paid separately
+using a compatible Storage offering current when each later operation begins.
 
 ---
 
@@ -1099,15 +1141,31 @@ For example:
 
   "wantedServices": [
     {
-      "id": "storage-1g-10d",
-      "service": "cr2se.storage.store",
+      "id": "storage-flexible",
+      "service": "cr2se.storage",
       "serviceVersion": 1,
-      "description": "Store up to 1 GB for 10 days.",
+      "description": "Store requester-selected data for a requester-selected period.",
       "creditIssuer": "ALICE_ID",
-      "price": 5,
+      "pricing": {
+        "model": "cr2se.storage.v1",
+        "minimumPrice": 1,
+        "byteUsageFactor": { "numerator": 1, "denominator": 1000000 },
+        "byteStorageDurationFactor": { "numerator": 1, "denominator": 86400000000 },
+        "retrievalByteUsageFactor": { "numerator": 1, "denominator": 1000000 },
+        "renewalByteStorageDurationFactor": { "numerator": 1, "denominator": 86400000000 },
+        "removePrice": 1
+      },
+      "checkPrice": 1,
+      "preconditions": [
+        "cr2se.identity"
+      ],
       "info": {
         "maximumBytes": 1000000000,
-        "periodDays": 10
+        "minimumRetentionSeconds": 3600,
+        "maximumRetentionSeconds": 2592000,
+        "maximumTotalRetentionSeconds": 31536000,
+        "maximumRetrieveBytes": 1000000000,
+        "checkResponseSeconds": 30
       }
     }
   ]
@@ -1125,9 +1183,9 @@ Provided:
         Price: 1 Alice credit.
 
 Wanted:
-    cr2se.storage.store
+    cr2se.storage
         Alice wants storage.
-        Alice offers 5 Alice credits.
+        Alice offers Alice credits calculated by the advertised Storage model.
 ```
 
 ---
@@ -1143,7 +1201,7 @@ For example, an identity may:
 ```text
 add an offering;
 remove an offering;
-change a price;
+change a fixed price or pricing model;
 change service-specific information;
 change a description;
 change preconditions.
@@ -1185,6 +1243,11 @@ storage-1g-10d
 ```
 
 is no longer advertised.
+
+Removing an offering stops new selections of that offering. It does not by
+itself cancel an accepted ongoing service or shorten an active Storage lease.
+Later Storage operations use another compatible current offering, if one is
+available; their prices are not inherited from the removed offering.
 
 CR2SE does not require a separate deletion record.
 
@@ -1425,14 +1488,14 @@ For example:
 ```text
 Alice provides:
 
-storage-1g-10d
-    5 credits
+storage-economy
+    lower byte-usage and byte-storage-duration factors
 
-storage-1g-30d
-    12 credits
+storage-fast-retrieval
+    higher storage factors, lower retrieval factor
 
-storage-10g-10d
-    40 credits
+storage-long-term
+    larger maximum total retention
 ```
 
 A remote application may choose whichever offering satisfies its needs.
@@ -1442,7 +1505,7 @@ Selection policy is not defined by the Board.
 An implementation may consider:
 
 ```text
-price;
+fixed price or understood pricing model;
 trust;
 available credits;
 service terms;
@@ -1462,10 +1525,10 @@ For example:
 
 ```text
 Alice wants:
-    cr2se.storage.store
+    cr2se.storage
 
 Bob provides:
-    cr2se.storage.store
+    cr2se.storage
 ```
 
 This indicates that Alice and Bob may be able to exchange a storage service.
@@ -1480,7 +1543,7 @@ input and output schemas from the retrieved service definitions;
 check definitions from the retrieved service definitions;
 check price from the Board;
 service-specific info;
-price;
+fixed price or understood pricing model;
 credit issuer;
 preconditions;
 service-defined constraints.
@@ -1511,7 +1574,13 @@ every offering has a positive serviceVersion;
 
 every offering has a valid creditIssuer;
 
-every offering has a price of at least one credit;
+every offering has exactly one of `price` or `pricing`;
+
+every fixed `price` is at least one credit;
+
+every `pricing` object has a non-empty model identifier;
+
+an offering using a known pricing model satisfies that model's required fields, types, limits, and relations;
 
 checkPrice, when present, is at least one credit;
 
@@ -1756,8 +1825,8 @@ serviceVersion
 creditIssuer
     identifies the credits used for payment;
 
-price
-    is a fixed integer price of at least one credit.
+price or pricing
+    defines either a fixed integer price or a deterministic service-defined pricing model; every final price is at least one credit.
 ```
 
 Every offering also has a non-empty `description` that summarizes the service for discovery.
@@ -1774,7 +1843,7 @@ implementation suggestions.
 
 Boards never contain service input, output, or check schemas. Every advertised offering instead has a definition retrievable by its Board `id` through `service.get`. The definition repeats the service identity and description and contains the typed input, output, and check contracts.
 
-Different service terms or prices should normally be represented as different offerings.
+Different service terms or pricing models should normally be represented as different offerings. One deterministic model may cover a bounded range of requester-selected inputs.
 
 Credits use the unsigned 64-bit integer model defined by the Ledger.
 

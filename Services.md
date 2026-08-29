@@ -62,13 +62,13 @@ Service:
     store bytes
 
 Offering:
-    store at most 1 GB for 10 days for 5 Alice credits
+    store up to 1 GB for 1 hour to 30 days using advertised byte-usage and byte-storage-duration factors
 
 Invocation:
-    Bob asks Alice to store one particular byte sequence
+    Bob asks Alice to store 200 MB for 10 days at the exact calculated price
 ```
 
-Several offerings may refer to the same service and service version while advertising different capacities, durations, prices, credit issuers, or other terms.
+Several offerings may refer to the same service and service version while advertising different capacities, duration ranges, fixed prices or pricing models, credit issuers, or other terms.
 
 ---
 
@@ -100,7 +100,7 @@ The pair identifies one exact service contract:
 (service, serviceVersion)
 ```
 
-Two offerings using the same pair must describe the same operation, input, output, success rules, failure rules, and check behavior. Offering-specific terms such as price, capacity, duration, and availability may differ.
+Two offerings using the same pair must describe the same operation, input, output, success rules, failure rules, and check behavior. Offering-specific terms such as a fixed price or pricing model, capacity, duration, and availability may differ.
 
 A change that is not backward-compatible with the existing contract requires a new service version.
 
@@ -292,7 +292,7 @@ output;
 check.
 ```
 
-The `id`, `service`, `serviceVersion`, and `description` values must exactly match the Board offering used for the lookup. The definition must not contain offering-specific economic terms such as `creditIssuer`, `price`, or `checkPrice`; those remain on the Board.
+The `id`, `service`, `serviceVersion`, and `description` values must exactly match the Board offering used for the lookup. The definition must not contain offering-specific economic terms such as `creditIssuer`, `price`, `pricing`, or `checkPrice`; those remain on the Board.
 
 Separating definitions keeps Boards compact and allows applications to fetch type information only for services they are considering. A publisher must make the definition available for every currently advertised provided or wanted offering.
 
@@ -637,7 +637,7 @@ The offering selected for an invocation identifies:
 
 ```text
 creditIssuer
-price
+price or pricing model
 ```
 
 These fields and their meanings are defined by the Board specification using the credit model defined by the Ledger specification.
@@ -652,7 +652,9 @@ A price of zero is invalid. This rule applies even when the requester and provid
 
 Requiring a nonzero price is an anti-abuse property of CR2SE. Closely related identities may issue and exchange large credit balances when they want effectively unrestricted cooperation, but they still use priced service invocations.
 
-The price and credit issuer must be known and accepted before execution begins. CR2SE version 1 Board offerings use a fixed price rather than an implicit per-byte, per-second, or other formula.
+The exact price and credit issuer must be known and accepted before execution begins. A Board offering may contain a fixed `price` or a deterministic service-defined `pricing` model. A variable model must calculate one integer price from advertised terms and validated input before chargeable execution begins. Undisclosed, discretionary, floating-point, or post-execution pricing is invalid.
+
+For streamed input, the peers may first exchange the bounded metadata needed to calculate the price. They must agree on the calculated price before the provider accepts the large body or begins chargeable work.
 
 ---
 
@@ -667,10 +669,10 @@ discover offering
 select service identifier, version, and offering
         |
         v
-agree input, credit issuer, and price
+agree input metadata, credit issuer, and exact price
         |
         v
-provider validates input and current terms
+provider validates input and current offering terms
         |
         v
 provider performs service
@@ -828,11 +830,11 @@ Their individual specifications define their exact operation identifiers, versio
 
 ### Storage
 
-Storage services preserve arbitrary bytes for an agreed period or under other explicitly advertised storage terms.
+Storage services preserve arbitrary bytes for a requester-selected agreed period within advertised limits.
 
-The Storage specification defines the related operations required to place, retrieve, check, and remove stored data. A typical check challenges the provider for selected stored bytes or cryptographic evidence derived from them.
+The Storage specification defines deterministic byte-usage and byte-storage-duration pricing and the operations required to place, retrieve, renew, check, and remove stored data. Retrieval and renewal are separately charged using a compatible provider offering current for each operation. The version 1 check challenges the provider for one requester-selected stored byte.
 
-This document does not define storage chunking, retention measurement, retrieval rules, or proof details. Those belong in `Storage.md`.
+This document does not define storage internals. Exact lease, timing, retrieval, renewal, pricing, encryption-guidance, and check rules belong in `Storage.md`.
 
 ### Computation
 
@@ -900,7 +902,7 @@ service identifier;
 service version;
 direction: provided or wanted;
 credit issuer;
-price;
+fixed price or deterministic pricing model;
 optional separate check price;
 preconditions;
 offering-specific information.
@@ -967,7 +969,7 @@ a positive service version;
 a defined input;
 a defined output;
 a non-empty semantic description for every named input, output, and check field;
-a price of at least one credit;
+a fixed or calculated price of at least one credit;
 a defined check;
 defined success and failure behavior.
 ```
