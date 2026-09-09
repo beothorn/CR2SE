@@ -220,7 +220,7 @@ The distinction between provided and wanted services concerns the direction of t
 
 It does not describe the direction of credits.
 
-Payment is described separately.  
+Payment is described separately.
 
 ---
 
@@ -552,10 +552,22 @@ Every offering must contain `creditIssuer` to identify the issuer of the credits
 For example:
 
 ```json
-"creditIssuer": "CR2SE_ID"
+"creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ"
 ```
 
-`creditIssuer` must contain a valid CR2SE identity ID as defined by the Identity specification.
+`creditIssuer` must contain a valid textual CR2SE identity ID as defined by the
+[Identity specification](./Identity.md). It therefore uses the `cr2se:` prefix
+followed by the unpadded Base32 encoding of the 32-byte ID. Base32 letters are
+accepted without regard to ASCII letter case; canonical output uses uppercase.
+
+The examples below use the deterministic identities from the
+[Network version 1 test vectors](./pseudoCode/NetworkTestVectors.md), named
+Alice and Bob here:
+
+```text
+Alice: cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ
+Bob:   cr2se:O5CQJ3PUPOXCRJHRCVF7IULK45HQSDXFWAZEMRMG2DBB2JGZWJEQ
+```
 
 The value is explicit.
 
@@ -591,7 +603,7 @@ Suppose Alice publishes:
   "id": "weather",
   "service": "example.weather.current",
   "serviceVersion": 1,
-  "creditIssuer": "ALICE_ID",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "price": 2
 }
 ```
@@ -608,7 +620,7 @@ Alice could instead advertise:
 
 ```json
 {
-  "creditIssuer": "BOB_ID",
+  "creditIssuer": "cr2se:O5CQJ3PUPOXCRJHRCVF7IULK45HQSDXFWAZEMRMG2DBB2JGZWJEQ",
   "price": 2
 }
 ```
@@ -642,7 +654,7 @@ Suppose Alice publishes:
   "id": "storage",
   "service": "example.storage.fixed",
   "serviceVersion": 1,
-  "creditIssuer": "ALICE_ID",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "price": 5
 }
 ```
@@ -660,7 +672,7 @@ Alice is willing to compensate the provider with 5 Alice credits.
 If Alice instead advertises:
 
 ```json
-"creditIssuer": "BOB_ID"
+"creditIssuer": "cr2se:O5CQJ3PUPOXCRJHRCVF7IULK45HQSDXFWAZEMRMG2DBB2JGZWJEQ"
 ```
 
 then Alice is advertising payment using Bob credits.
@@ -692,7 +704,7 @@ Therefore:
 
 ```json
 {
-  "creditIssuer": "ALICE_ID",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "price": 5
 }
 ```
@@ -763,7 +775,7 @@ For example:
   "id": "storage-1g-10d",
   "service": "example.storage.fixed",
   "serviceVersion": 1,
-  "creditIssuer": "ALICE_ID",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "price": 5,
   "description": "Store up to 1 GB for 10 days."
 }
@@ -800,7 +812,7 @@ the number of applicable bytes or byte-seconds covered by that rate. Thus
   "id": "storage-flexible",
   "service": "cr2se.storage",
   "serviceVersion": 1,
-  "creditIssuer": "ALICE_ID",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "pricing": {
     "model": "cr2se.storage.v1",
     "minimumPrice": 1,
@@ -837,7 +849,7 @@ For example:
     "id": "storage-1g-10d",
     "service": "example.storage.fixed",
     "serviceVersion": 1,
-    "creditIssuer": "ALICE_ID",
+    "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
     "price": 5,
     "info": {
       "maximumBytes": 1000000000,
@@ -848,7 +860,7 @@ For example:
     "id": "storage-1g-30d",
     "service": "example.storage.fixed",
     "serviceVersion": 1,
-    "creditIssuer": "ALICE_ID",
+    "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
     "price": 12,
     "info": {
       "maximumBytes": 1000000000,
@@ -1044,7 +1056,7 @@ A complete offering could look like:
   "service": "example.weather.current",
   "serviceVersion": 1,
   "description": "Returns the current temperature for a location.",
-  "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "price": 1,
   "preconditions": [
     "cr2se.identity"
@@ -1086,7 +1098,7 @@ The exact storage fields and semantics belong to `Storage.md`.
   "service": "cr2se.storage",
   "serviceVersion": 1,
   "description": "Store requester-selected data for a requester-selected period.",
-  "creditIssuer": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOP",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
   "pricing": {
     "model": "cr2se.storage.v1",
     "minimumPrice": 1,
@@ -1134,7 +1146,7 @@ For example:
       "service": "example.weather.current",
       "serviceVersion": 1,
       "description": "Returns the current temperature.",
-      "creditIssuer": "ALICE_ID",
+      "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
       "price": 1
     }
   ],
@@ -1145,7 +1157,7 @@ For example:
       "service": "cr2se.storage",
       "serviceVersion": 1,
       "description": "Store requester-selected data for a requester-selected period.",
-      "creditIssuer": "ALICE_ID",
+      "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
       "pricing": {
         "model": "cr2se.storage.v1",
         "minimumPrice": 1,
@@ -1750,7 +1762,7 @@ Suppose Alice publishes:
       "service": "example.weather.current",
       "serviceVersion": 1,
       "description": "Returns the current temperature in whole degrees Celsius using the provider's configured observation source.",
-      "creditIssuer": "ALICE_ID",
+      "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
       "price": 1
     }
   ],
