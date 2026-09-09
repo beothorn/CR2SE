@@ -14,6 +14,8 @@ wire behavior that the corresponding specification does not define.
   integrity, stream multiplexing, lifecycle, errors, and shutdown.
 - [Network version 1 test vectors](./NetworkTestVectors.md) — deterministic
   identity, handshake, key-derivation, and integrity-tag interoperability data.
+- [Identity](./Identity.md) — identity generation, ID derivation, public-key
+  validation, textual and QR forms, proof helpers, and private-key lifecycle.
 - [Board](./Board.md) — bounded JSON decoding, version and offering validation,
   pricing and precondition capability checks, publication state, caching,
   service-definition consistency, and stale-selection handling.
