@@ -8,7 +8,12 @@ This glossary defines the common vocabulary used across CR2SE specifications. A 
 A peer-to-peer protocol in which identities exchange services for identity-issued credits. CR2SE defines networking, identity, cryptography, service discovery, service contracts, invocation, and local economic accounting. It does not define a global currency or central authority.
 
 **CR2SE identity** (short form: **identity**)
-A cryptographic identity consisting of an Ed25519 key pair and the CR2SE ID derived from its public key. An identity is independent of any person, machine, process, network address, or connection. One identity may operate through multiple nodes. See [Identity](./Identity.md).
+A cryptographic identity whose control and CR2SE ID derive from an Ed25519 key
+pair and whose separate encryption capability uses a persistent X25519 pair
+bound by the Ed25519 key. An identity is independent of any person, machine,
+process, network address, or connection. One identity may operate through
+multiple nodes using the same two key pairs. See [Identity](./Identity.md) and
+[Encryption](./Encryption.md).
 
 **CR2SE ID**
 The stable 256-bit identifier derived from a CR2SE identity's version, key algorithm, and public key. It identifies the identity; it is not a network address.

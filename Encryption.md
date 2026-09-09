@@ -171,7 +171,7 @@ fresh challenge
 <---------------------------------------
 
 sign challenge using
-Identity A private key
+Identity A Ed25519 private key
 --------------------------------------->
 
 verify signature using
@@ -317,9 +317,9 @@ CR2SE uses key agreement for this purpose.
 Conceptually:
 
 ```text
-Alice private key
+Alice X25519 private key
         +
-Bob public key
+Bob X25519 public key
         |
         v
    key agreement
@@ -331,9 +331,9 @@ Bob public key
 Bob independently performs the complementary operation:
 
 ```text
-Bob private key
+Bob X25519 private key
         +
-Alice public key
+Alice X25519 public key
         |
         v
    key agreement
@@ -477,6 +477,12 @@ For example, a CR2SE storage specification may define these properties for store
 
 This document defines the cryptographic requirements for encrypting each encryption unit, not the storage layout.
 
+A protocol may represent each independent unit as a complete version 1
+identity-encryption object defined in section 18. If it instead derives one key
+for several chunks, that protocol must define the exact shared envelope,
+per-chunk authenticated data, and nonce assignment. Those service-specific
+bytes must not be inferred from chunk order or a local file layout.
+
 A nonce must never be reused with the same encryption key.
 
 Therefore, when several chunks are encrypted under the same derived key, the mechanism using the encryption primitive must assign a unique nonce to every encrypted chunk.
@@ -537,6 +543,20 @@ The X25519 private key must remain secret.
 The X25519 public key may be distributed to other participants.
 
 The encryption key pair is persistent because other participants must be able to encrypt data for an identity even when that identity is not currently connected.
+
+All nodes operating as the same CR2SE identity must use the same persistent
+X25519 encryption key pair as well as the same Ed25519 identity key pair. How
+an implementation securely copies or synchronizes those keys among a person's
+phone, computer, replicated server, or other nodes is outside the CR2SE
+protocol.
+
+CR2SE version 1 does not define encryption-key rotation, selection among
+several bound encryption keys, or recovery after an encryption private key is
+lost. An implementation must not publish different persistent X25519 keys from
+different nodes while representing them as one consistently decrypting
+identity. Replacing the persistent encryption key does not change the CR2SE ID,
+which is derived only from Ed25519, but previously encrypted objects still
+require the old private key.
 
 For example, Alice may know Bob's public encryption key and encrypt data for Bob while Bob is offline.
 
@@ -746,7 +766,10 @@ It must not be used directly as an application encryption key.
 
 A derived encryption key must be produced using HKDF-SHA-256.
 
-An implementation must reject an X25519 operation when the underlying X25519 implementation reports an invalid or unacceptable shared result.
+An implementation must reject an X25519 operation when the underlying X25519
+implementation reports an invalid or unacceptable shared result. It must also
+compare the complete 32-byte shared result with zero and reject the all-zero
+result even when the cryptographic library does not report it as an error.
 
 ---
 
@@ -773,6 +796,65 @@ It converts key-agreement output into suitable key material and allows different
 The context used for a particular operation must therefore be defined by that operation.
 
 Different cryptographic purposes must not silently reuse derived keys merely because they originated from the same X25519 result.
+
+### Version 1 identity-encryption key derivation
+
+The generic encryption-for-an-identity operation uses the exact context below.
+It must not use implementation-selected HKDF salt or `info` values.
+
+Define the identity-encryption suite bytes:
+
+```text
+Encryption Format Version = 0x01
+Key Agreement Algorithm   = 0x01  (X25519)
+Key Derivation Algorithm  = 0x01  (HKDF-SHA-256)
+Authenticated Encryption  = 0x01  (XChaCha20-Poly1305)
+```
+
+Then define:
+
+```text
+kdfContext =
+    0x01
+    || 0x01
+    || 0x01
+    || 0x01
+    || recipient_cr2se_id
+    || recipient_persistent_x25519_public_key
+    || ephemeral_x25519_public_key
+    || nonce
+
+salt = SHA-256(
+    ASCII("CR2SE-IDENTITY-ENCRYPTION-SALT-V1")
+    || 0x00
+    || kdfContext
+)
+
+prk = HKDF-SHA-256-Extract(
+    salt,
+    x25519_shared_secret
+)
+
+encryptionKey = HKDF-SHA-256-Expand(
+    prk,
+    ASCII("CR2SE-IDENTITY-ENCRYPTION-KEY-V1")
+        || 0x00
+        || kdfContext,
+    32
+)
+```
+
+The CR2SE ID and both X25519 public keys are exact 32-byte values, and `nonce`
+is the fresh 24-byte XChaCha20-Poly1305 nonce. The four suite identifiers make
+`kdfContext` exactly 124 bytes. The derived encryption key is exactly 32 bytes.
+Intermediate shared-secret and PRK copies must be erased when no longer
+needed.
+
+Including both public keys follows the X25519 requirement not to treat a raw
+shared result as sufficient context. Including the recipient ID binds the
+derived key to the intended CR2SE identity rather than only to unlabelled key
+bytes. Including the fresh random nonce supplies a public per-object salt
+input and binds key derivation to the nonce used by authenticated encryption.
 
 ---
 
@@ -826,6 +908,50 @@ This allows protocol metadata to be cryptographically bound to ciphertext withou
 If authentication fails, decryption fails.
 
 No plaintext from a failed authenticated decryption may be accepted.
+
+### Version 1 identity-encryption object
+
+One invocation of the generic encryption-for-an-identity operation produces
+one version 1 encrypted object. All multi-byte integers in this format are
+unsigned and big-endian.
+
+The object begins with this exact 132-byte header:
+
+| Offset | Size | Field | Version 1 value |
+|---:|---:|---|---|
+| 0 | 1 | Encryption Format Version | `0x01` |
+| 1 | 1 | Key Agreement Algorithm | `0x01` (X25519) |
+| 2 | 1 | Key Derivation Algorithm | `0x01` (HKDF-SHA-256) |
+| 3 | 1 | Authenticated Encryption Algorithm | `0x01` (XChaCha20-Poly1305) |
+| 4 | 32 | Recipient CR2SE ID | binary ID |
+| 36 | 32 | Recipient Persistent X25519 Public Key | authenticated recipient key |
+| 68 | 32 | Ephemeral X25519 Public Key | generated for this object |
+| 100 | 24 | Nonce | fresh CSPRNG output |
+| 124 | 8 | Sealed Length | ciphertext plus 16-byte tag |
+
+The header is followed immediately by exactly `Sealed Length` bytes:
+
+```text
+XChaCha20-Poly1305 ciphertext || 16-byte authentication tag
+```
+
+`Sealed Length` must be at least 16 and must equal the plaintext byte length
+plus 16. A parser must validate the version, algorithms, length, and checked
+total object size before allocating or reading a declared body.
+
+The authenticated data passed to XChaCha20-Poly1305 is the complete 132-byte
+header exactly as encoded. The generic version 1 encrypted-object operation
+has no additional external authenticated-data input. A service needing to bind
+other metadata must include that metadata in the plaintext or define a
+service-specific encryption construction and exact authenticated bytes.
+
+The recipient must compare the header's recipient ID and persistent public key
+with its own identity before key agreement. Header authentication is still
+required; these preliminary comparisons do not replace authenticated
+decryption.
+
+The envelope does not identify or authenticate a sender. Sender authentication
+requires a separately defined signature or authenticated protocol.
 
 ---
 
@@ -1010,7 +1136,9 @@ shared_secret = X25519(
 )
 ```
 
-Alice derives a 32-byte encryption key from the shared secret using HKDF-SHA-256 with a context specific to CR2SE identity encryption.
+Alice derives a 32-byte encryption key from the shared secret using the exact
+version 1 identity-encryption salt, `kdfContext`, and HKDF `info` defined in
+section 17.
 
 Conceptually:
 
@@ -1032,16 +1160,20 @@ ephemeral private key
       encryption key
 ```
 
-Alice generates a fresh 24-byte nonce using a cryptographically secure random number generator.
+Alice rejects an all-zero X25519 shared result. She generates a fresh 24-byte
+nonce using a cryptographically secure random number generator.
 
-Alice encrypts the plaintext using XChaCha20-Poly1305.
+Alice constructs the 132-byte version 1 header, including the sealed length,
+and encrypts the plaintext using XChaCha20-Poly1305 with that complete header
+as authenticated data.
 
-The resulting encrypted object must carry enough non-secret information for Bob to perform decryption, including:
+The resulting encrypted object is the exact representation defined in section
+18:
 
 ```text
-ephemeral X25519 public key
-nonce
-ciphertext
+132-byte authenticated header
+|| ciphertext
+|| 16-byte authentication tag
 ```
 
 The ephemeral private key is not included.
@@ -1055,9 +1187,9 @@ It may be discarded after encryption is complete.
 Bob receives:
 
 ```text
-ephemeral X25519 public key
-nonce
+132-byte authenticated header
 ciphertext
+16-byte authentication tag
 ```
 
 Bob calculates:
@@ -1071,7 +1203,9 @@ shared_secret = X25519(
 
 This produces the same shared secret calculated by the sender.
 
-Bob applies the same HKDF-SHA-256 derivation and obtains the same encryption key.
+Bob rejects an all-zero shared result. He reconstructs the exact version 1
+identity-encryption KDF context from the header and applies the salt and HKDF
+`info` defined in section 17, obtaining the same encryption key.
 
 Conceptually:
 
@@ -1099,7 +1233,10 @@ XChaCha20-Poly1305 decrypt
          plaintext
 ```
 
-If authenticated decryption fails, the encrypted data must be rejected.
+Before decryption, Bob verifies that the header names Bob's CR2SE ID and Bob's
+persistent X25519 public key. Bob then uses the complete 132-byte header as
+authenticated data. If authenticated decryption fails, the encrypted data must
+be rejected without releasing any plaintext.
 
 ---
 
@@ -1540,6 +1677,11 @@ XChaCha20-Poly1305
     v
 authenticated ciphertext
 ```
+
+The generic version 1 identity-encryption operation binds its HKDF output to
+the suite identifiers, recipient CR2SE ID, recipient persistent X25519 public
+key, ephemeral public key, and fresh nonce. Its encrypted object uses the exact
+132-byte authenticated header defined in section 18.
 
 Encryption for oneself and encryption for another identity are the same operation with different recipients.
 

@@ -16,6 +16,12 @@ wire behavior that the corresponding specification does not define.
   identity, handshake, key-derivation, and integrity-tag interoperability data.
 - [Identity](./Identity.md) — identity generation, ID derivation, public-key
   validation, textual and QR forms, proof helpers, and private-key lifecycle.
+- [Encryption](./Encryption.md) — persistent encryption-key binding, exact
+  identity-encryption KDF and envelope, authenticated encryption, large-data
+  units, and content-encryption boundaries.
 - [Board](./Board.md) — bounded JSON decoding, version and offering validation,
   pricing and precondition capability checks, publication state, caching,
   service-definition consistency, and stale-selection handling.
+- [Computation](./Computation.md) — runtime and offering validation,
+  maximum-price authorization, metered execution, completion settlement,
+  independent checks, and security boundaries.

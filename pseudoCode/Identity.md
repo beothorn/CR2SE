@@ -6,9 +6,9 @@ specification remains authoritative. Names such as `SecureKeyStore`, byte
 arrays, and cryptographic operations describe responsibilities, not required
 classes, storage formats, or APIs.
 
-The pseudocode assumes conventional implementations of Ed25519, SHA-256, and
-RFC 4648 Base32. Private-key serialization, backup, recovery, and key-store
-protection are not wire formats defined by CR2SE version 1.
+The pseudocode assumes conventional implementations of Ed25519, X25519,
+SHA-256, and RFC 4648 Base32. Private-key serialization, backup, recovery, and
+key-store protection are not wire formats defined by CR2SE version 1.
 
 ---
 
@@ -19,6 +19,9 @@ IDENTITY_VERSION              = 0x01
 KEY_ALGORITHM_ED25519         = 0x01
 PUBLIC_KEY_SIZE               = 32
 ID_SIZE                       = 32
+X25519_PUBLIC_KEY_SIZE        = 32
+ED25519_SIGNATURE_SIZE        = 64
+ENCRYPTION_BINDING_PREFIX     = ASCII("CR2SE-ENCRYPTION-KEY-V1")
 
 TEXT_PREFIX                   = ASCII("cr2se:")
 BASE32_ALPHABET               = ASCII("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
@@ -33,7 +36,10 @@ PublicIdentity:
 
 LocalIdentity:
     publicIdentity            PublicIdentity
-    privateKeyHandle          protected Ed25519 private-key handle
+    encryptionPublicKey       32-byte persistent X25519 public key
+    encryptionKeyBinding      64-byte Ed25519 signature
+    signingPrivateKeyHandle   protected Ed25519 private-key handle
+    encryptionPrivateKeyHandle protected X25519 private-key handle
 
 ContactBootstrap:
     expectedRemoteId          32 bytes
@@ -50,26 +56,47 @@ installed on more than one node.
 ## 2. Version 1 identity generation
 
 ```text
-function generateIdentity(secureKeyStore):
-    keyPair = Ed25519.generateKeyPair(CSPRNG)
+function makeEncryptionKeyBindingBytes(x25519PublicKey):
+    require length(x25519PublicKey) == X25519_PUBLIC_KEY_SIZE
+    return ENCRYPTION_BINDING_PREFIX || x25519PublicKey
 
-    publicKey = Ed25519.canonicalPublicKeyBytes(keyPair.publicKey)
+
+function generateIdentity(secureKeyStore):
+    signingKeyPair = Ed25519.generateKeyPair(CSPRNG)
+    encryptionKeyPair = X25519.generateKeyPair(CSPRNG)
+
+    publicKey = Ed25519.canonicalPublicKeyBytes(signingKeyPair.publicKey)
     if length(publicKey) != PUBLIC_KEY_SIZE:
-        securelyErase(keyPair.privateKey)
+        securelyErase(signingKeyPair.privateKey)
+        securelyErase(encryptionKeyPair.privateKey)
         raise InternalError("unexpected Ed25519 public-key size")
 
+    encryptionPublicKey = X25519.canonicalPublicKeyBytes(
+        encryptionKeyPair.publicKey)
+    if length(encryptionPublicKey) != X25519_PUBLIC_KEY_SIZE:
+        securelyErase(signingKeyPair.privateKey)
+        securelyErase(encryptionKeyPair.privateKey)
+        raise InternalError("unexpected X25519 public-key size")
+
     id = deriveVersion1Id(publicKey)
+    binding = Ed25519.sign(
+        signingKeyPair.privateKey,
+        makeEncryptionKeyBindingBytes(encryptionPublicKey)
+    )
+    assert length(binding) == ED25519_SIGNATURE_SIZE
 
     // The key store chooses its protected local representation. It must not
-    // alter the key pair visible to other CR2SE implementations.
+    // alter either key pair visible to other CR2SE implementations.
     try:
-        privateKeyHandle = secureKeyStore.storeEd25519PrivateKey(
-            keyPair.privateKey
+        handles = secureKeyStore.storeIdentityKeyPairsAtomically(
+            signingKeyPair.privateKey,
+            encryptionKeyPair.privateKey
         )
     finally:
-        securelyEraseTemporaryCopies(keyPair.privateKey)
+        securelyEraseTemporaryCopies(signingKeyPair.privateKey)
+        securelyEraseTemporaryCopies(encryptionKeyPair.privateKey)
 
-    if privateKeyHandle is ERROR:
+    if handles is ERROR:
         raise IdentityStorageFailure
 
     return LocalIdentity {
@@ -79,7 +106,10 @@ function generateIdentity(secureKeyStore):
             publicKey: publicKey,
             id: id
         },
-        privateKeyHandle: privateKeyHandle
+        encryptionPublicKey: encryptionPublicKey,
+        encryptionKeyBinding: binding,
+        signingPrivateKeyHandle: handles.signing,
+        encryptionPrivateKeyHandle: handles.encryption
     }
 ```
 
@@ -87,9 +117,9 @@ Generation is local and requires no registration, network connection,
 certificate authority, or uniqueness lookup. `CSPRNG` and the Ed25519 library
 must provide cryptographically secure key generation.
 
-Failure to store the private key successfully fails identity creation. An
-implementation must not report a durable identity while retaining its only
-private-key copy merely in volatile temporary memory.
+Failure to store both private keys successfully fails identity creation. An
+implementation must not report a durable identity while retaining either only
+in volatile temporary memory.
 
 ---
 
@@ -291,7 +321,7 @@ function signProtocolMessage(localIdentity, protocolDefinedMessage):
     require localIdentity.publicIdentity.keyAlgorithm == KEY_ALGORITHM_ED25519
 
     return Ed25519.sign(
-        localIdentity.privateKeyHandle,
+        localIdentity.signingPrivateKeyHandle,
         protocolDefinedMessage
     )
 
@@ -338,16 +368,23 @@ Local serialization is implementation-specific, but loading must not allow
 mismatched stored fields to change the externally visible identity.
 
 ```text
-function loadLocalIdentity(secureKeyStore, privateKeyHandle):
-    privateKey = secureKeyStore.openEd25519PrivateKey(privateKeyHandle)
-    if privateKey is ERROR:
+function loadLocalIdentity(secureKeyStore, identityKeyHandles):
+    privateKeys = secureKeyStore.openIdentityKeyPairs(identityKeyHandles)
+    if privateKeys is ERROR:
         raise IdentityUnavailable
 
     try:
-        publicKey = Ed25519.deriveCanonicalPublicKey(privateKey)
+        publicKey = Ed25519.deriveCanonicalPublicKey(privateKeys.signing)
+        encryptionPublicKey = X25519.deriveCanonicalPublicKey(
+            privateKeys.encryption)
         id = deriveVersion1Id(publicKey)
+        binding = Ed25519.sign(
+            privateKeys.signing,
+            makeEncryptionKeyBindingBytes(encryptionPublicKey)
+        )
     finally:
-        securelyEraseTemporaryCopies(privateKey)
+        securelyEraseTemporaryCopies(privateKeys.signing)
+        securelyEraseTemporaryCopies(privateKeys.encryption)
 
     return LocalIdentity {
         publicIdentity: PublicIdentity {
@@ -356,13 +393,17 @@ function loadLocalIdentity(secureKeyStore, privateKeyHandle):
             publicKey: publicKey,
             id: id
         },
-        privateKeyHandle: privateKeyHandle
+        encryptionPublicKey: encryptionPublicKey,
+        encryptionKeyBinding: binding,
+        signingPrivateKeyHandle: identityKeyHandles.signing,
+        encryptionPrivateKeyHandle: identityKeyHandles.encryption
     }
 ```
 
 If local storage also contains cached public-key or ID fields, recompute them
-from the private key and reject any mismatch. Copying the same valid key pair
-to another implementation produces the same public key and CR2SE ID.
+from the private keys and reject any mismatch. Copying both valid key pairs to
+another implementation produces the same signing public key, encryption
+public key, binding signature, and CR2SE ID.
 
 CR2SE version 1 defines no portable private-key encoding, password recovery,
 central recovery, key replacement preserving an ID, or standard export
@@ -441,38 +482,45 @@ function startNode(configuredIdentityHandles, secureKeyStore):
     if count(configuredIdentityHandles) != 1:
         raise ConfigurationError("a CR2SE node operates using exactly one identity")
 
-    localIdentity = loadLocalIdentity(
-        secureKeyStore,
-        configuredIdentityHandles[0]
-    )
+    localIdentity = loadLocalIdentity(secureKeyStore, configuredIdentityHandles[0])
 
     return Node {localIdentity: localIdentity}
 
 
 function classifyConfiguredKeyChange(currentIdentity, candidateIdentity):
     if candidateIdentity.publicIdentity.id == currentIdentity.publicIdentity.id:
-        return SAME_IDENTITY
+        if candidateIdentity.encryptionPublicKey
+           == currentIdentity.encryptionPublicKey:
+            return SAME_IDENTITY_KEYS
 
-    // A different key pair is a different version 1 identity. There is no
-    // transparent rotation or transfer of identity-bound history.
+        // The CR2SE ID is unchanged, but version 1 defines no encryption-key
+        // rotation or selection mechanism.
+        return SAME_ID_WITH_INCONSISTENT_ENCRYPTION_KEY
+
+    // A different Ed25519 pair is a different version 1 identity. Version 1
+    // also defines no transparent persistent X25519 rotation.
     return NEW_IDENTITY
 ```
 
 Credits, trust, reputation, relationships, and prior resource commitments are
 associated with the binary ID. Creating or configuring another identity does
-not copy those properties. Several nodes configured with the same key pair are
-indistinguishable as identities to peers.
+not copy those properties. Several nodes configured with the same Ed25519 and
+persistent X25519 pairs are indistinguishable as identities to peers and can
+decrypt the same identity-encrypted objects. Key replication is an
+implementation responsibility, not a CR2SE protocol operation.
 
-If the private key is lost, version 1 cannot recover control of the identity.
-If it is copied or compromised, every holder can act as that identity; the
-protocol cannot identify a preferred or original holder.
+If the Ed25519 private key is lost, version 1 cannot recover control of the
+identity. If it is copied or compromised, every holder can act as that
+identity. Loss of only the X25519 private key prevents decryption of objects
+for that key; compromise of only that key exposes confidentiality but does not
+produce identity signatures.
 
 ---
 
 ## 13. Private-key handling invariants
 
 ```text
-never include a private key in:
+never include either private key in:
     a binary CR2SE ID;
     a textual CR2SE ID;
     an identity QR;
@@ -480,12 +528,13 @@ never include a private key in:
     a public identity descriptor;
     or a message sent merely to identify a node
 
-protect private keys using mechanisms appropriate to the environment;
-use private keys only through the minimum required signing or derivation API;
+protect both private keys using mechanisms appropriate to the environment;
+use them only through the minimum required signing, key-agreement, or
+    derivation API;
 erase avoidable plaintext temporary copies;
 do not log private keys or deterministic test private keys used in production;
 make backup and compromise consequences clear to the operator;
-and treat a newly generated key pair as a newly generated identity.
+and treat a newly generated Ed25519 pair as a newly generated identity.
 ```
 
 Hardware-backed stores, operating-system key stores, encrypted files, secure
@@ -498,10 +547,11 @@ same Ed25519 public key and derived CR2SE ID.
 
 ```text
 Identity:
-    generate or load the Ed25519 key pair
+    generate or load the Ed25519 and persistent X25519 key pairs
     derive and format the stable CR2SE ID
     validate an ID/public-key relationship
     sign protocol-defined proof messages
+    bind the persistent X25519 public key to the Ed25519 identity
 
 Network:
     locate or connect to an address
@@ -528,6 +578,7 @@ derivation, parsing, formatting, proof verification, and key loading:
 
 ```text
 Ed25519 generation using a CSPRNG and canonical 32-byte public keys;
+X25519 generation using a CSPRNG and canonical 32-byte public keys;
 ID derivation over exactly 0x01 || 0x01 || publicKey;
 rejection of public keys and claimed IDs shorter or longer than 32 bytes;
 rejection of unsupported identity versions and key algorithms;
@@ -544,10 +595,11 @@ binary identity comparison across differently cased textual inputs;
 identity QR round trips without adding address semantics;
 contact bootstrap authentication as the expected ID;
 contact bootstrap rejection when the endpoint authenticates as another ID;
-loading a copied key pair in another implementation and deriving the same ID;
+loading both copied key pairs in another implementation and deriving the same ID;
+detecting the same ID with a different persistent encryption public key;
 rejection of mismatched cached public-key or ID storage fields;
 node startup with zero, one, and more than one configured identities;
-and generation of a new key pair producing a new identity without inherited state.
+and generation of a new Ed25519 pair producing a new identity without inherited state.
 ```
 
 The fixed public keys and expected binary IDs in

@@ -4,9 +4,13 @@ CR2SE identities provide a stable way to identify participants independently of 
 
 Common domain terms such as **CR2SE identity**, **CR2SE ID**, **CR2SE node**, **peer**, and **connection** are defined in the [CR2SE Glossary](./Glossary.md).
 
-An identity is based on a cryptographic key pair.
+An identity is based on cryptographic key material. Its Ed25519 signing key
+pair defines the CR2SE ID. Version 1 also gives the identity a persistent
+X25519 encryption key pair, cryptographically bound to the signing key as
+defined by `Encryption.md`.
 
-The public key is used to derive the identity identifier. The private key is used to prove control of that identity.
+The Ed25519 public key is used to derive the identity identifier. The Ed25519
+private key is used to prove control of that identity.
 
 Conceptually:
 
@@ -27,6 +31,7 @@ An identity can be created locally without contacting another CR2SE node or any 
 CR2SE version 1 uses:
 
 * Ed25519 for identity key pairs;
+* persistent X25519 key pairs for identity encryption;
 * SHA-256 for deriving identity identifiers;
 * Base32 for the textual representation of identifiers.
 
@@ -36,7 +41,9 @@ CR2SE version 1 uses:
 
 An identity and a node are different concepts.
 
-A **CR2SE identity** is a cryptographic identity represented by a key pair and its derived identifier.
+A **CR2SE identity** is a cryptographic identity whose identifier and control
+derive from an Ed25519 key pair. Its persistent X25519 pair provides the
+separate encryption capability defined by `Encryption.md`.
 
 A **CR2SE node** is a running implementation of CR2SE.
 
@@ -48,7 +55,7 @@ For example:
 
 ```text
                     Identity A
-                 key pair + ID
+                key pairs + ID
                        |
           +------------+------------+
           |            |            |
@@ -78,20 +85,28 @@ Each node still operates using exactly one identity.
 
 ## 2. Identity Ownership
 
-Control of an identity is established by possession of its private key.
+Control of an identity is established by possession of its Ed25519 private
+key.
 
-Anyone possessing the private key can act as that identity.
+Anyone possessing the Ed25519 private key can act as that identity.
 
-Therefore, copying an identity key pair to another machine allows that machine to operate using the same identity.
+Therefore, copying the Ed25519 identity key pair to another machine allows
+that machine to authenticate as the same identity.
+
+To preserve the same version 1 encryption capability, nodes operating as one
+identity also use the same persistent X25519 encryption key pair. Securely
+replicating the two key pairs among devices or processes is an implementation
+responsibility and is not a CR2SE protocol operation.
 
 This is intentional.
 
-CR2SE does not attempt to distinguish between different machines possessing the same private key.
+CR2SE does not attempt to distinguish between different machines possessing
+the same Ed25519 private key.
 
 From the protocol's perspective:
 
 ```text
-same private key
+same Ed25519 private key
         |
         v
 same identity
@@ -119,9 +134,11 @@ Creating an identity does not require:
 To create a CR2SE version 1 identity, an implementation:
 
 1. generates an Ed25519 key pair using a cryptographically secure random number generator;
-2. obtains the canonical Ed25519 public key bytes;
-3. derives the CR2SE ID from the public key as defined below;
-4. securely stores the private key.
+2. generates a persistent X25519 encryption key pair using a cryptographically secure random number generator;
+3. obtains the canonical Ed25519 public key bytes;
+4. derives the CR2SE ID from the Ed25519 public key as defined below;
+5. signs the X25519 public key with the Ed25519 private key using the binding bytes defined by `Encryption.md`;
+6. securely stores both private keys.
 
 Conceptually:
 
@@ -131,15 +148,29 @@ secure random data
         v
 Ed25519 key generation
         |
-        +------> Private Key
+        +------> Ed25519 Private Key
         |
-        +------> Public Key
+        +------> Ed25519 Public Key
                      |
                      v
                CR2SE ID
+
+secure random data
+        |
+        v
+X25519 key generation
+        |
+        +------> Persistent Encryption Private Key
+        |
+        +------> Persistent Encryption Public Key
+                         |
+                         | bound by Ed25519 signature
+                         v
+                    CR2SE Identity
 ```
 
-The private key must never be transmitted merely for the purpose of identifying a node.
+Neither private key may be transmitted merely for the purpose of identifying
+or encrypting for a node.
 
 ---
 
@@ -153,6 +184,7 @@ CR2SE version 1 defines one mandatory identity configuration:
 Identity format version: 1
 Key algorithm:           Ed25519
 ID hash algorithm:       SHA-256
+Encryption algorithm:    persistent X25519 key agreement
 Text encoding:           Base32
 ```
 
@@ -161,6 +193,11 @@ All CR2SE version 1 implementations must support this configuration.
 Future versions may define additional algorithms if existing algorithms become unsuitable or stronger alternatives are required.
 
 An implementation must not silently interpret an unknown identity version or key algorithm as a version 1 identity.
+
+The X25519 key does not participate in CR2SE ID derivation. Its public key is
+authorized by the identity's Ed25519 key, so independent implementations can
+verify that it belongs to the identity. The exact binding and encryption
+operations are defined by `Encryption.md`.
 
 ---
 
@@ -356,7 +393,8 @@ Peer A                            Peer B
         authentication challenge
 <------------------------------------
 
-        signature using X private key
+        signature using Identity X's
+        Ed25519 private key
 ------------------------------------>
 
         verify using X public key
@@ -651,7 +689,8 @@ Identity defines the identifier that such mechanisms may use.
 
 CR2SE intentionally does not prevent participants from generating multiple identities.
 
-A participant may generate a new key pair and therefore a new identity at any time.
+A participant may generate a new Ed25519 key pair and therefore a new identity
+at any time.
 
 There is no central registry that limits identity creation.
 
@@ -686,7 +725,7 @@ Identity A
     credits: 100
     trust:   established
 
-generate new key pair
+generate new Ed25519 key pair
 
 Identity B
     credits: 0
@@ -733,7 +772,8 @@ CR2SE does not track which physical machine performed previous actions unless a 
 
 ## 22. Private Key Loss
 
-If the private key of an identity is lost, control of that identity is lost.
+If the Ed25519 private key of an identity is lost, control of that identity is
+lost.
 
 CR2SE version 1 does not provide account recovery.
 
@@ -744,7 +784,12 @@ It does not provide:
 * recovery through another peer;
 * automatic key replacement.
 
-Without the private key, a participant can no longer prove control of the identity.
+Without the Ed25519 private key, a participant can no longer prove control of
+the identity.
+
+If only the persistent X25519 private key is lost, the participant may still
+prove the identity using Ed25519 but can no longer decrypt objects encrypted to
+the lost X25519 key. Version 1 defines no recovery for either private key.
 
 Any credits, trust, reputation, or relationships associated exclusively with that identity may therefore become inaccessible.
 
@@ -754,24 +799,32 @@ Implementations should clearly communicate the importance of protecting and back
 
 ## 23. Private Key Compromise
 
-Anyone obtaining an identity's private key can impersonate that identity.
+Anyone obtaining an identity's Ed25519 private key can impersonate that
+identity and can authorize an encryption public key for it.
 
-CR2SE version 1 does not attempt to determine which holder of a duplicated private key is the legitimate owner.
+CR2SE version 1 does not attempt to determine which holder of a duplicated
+Ed25519 private key is the legitimate owner.
 
-From the protocol's perspective, possession of the private key is the authority to act as the identity.
+From the protocol's perspective, possession of the Ed25519 private key is the
+authority to act as the identity.
 
 Implementations must therefore protect private keys appropriately for their environment.
+
+Compromise of only the persistent X25519 private key permits decryption of
+objects protected for that key, but does not by itself create Ed25519 identity
+proofs or signatures. It is nevertheless a compromise of the identity's
+confidentiality and must be treated as secret-key loss.
 
 ---
 
 ## 24. Key Changes
 
-Changing the identity key pair creates a new identity.
+Changing the Ed25519 identity key pair creates a new identity.
 
 Because the CR2SE ID is derived from the public key:
 
 ```text
-new key pair
+new Ed25519 key pair
     |
     v
 new public key
@@ -784,9 +837,15 @@ CR2SE version 1 does not define transparent key rotation that preserves an ident
 
 This is intentional.
 
-A new key pair represents a new identity.
+A new Ed25519 key pair represents a new identity.
 
 Future CR2SE versions may define mechanisms for announcing or proving relationships between old and new identities, but such mechanisms must not change the fundamental version 1 ID derivation rules.
+
+Replacing only the persistent X25519 encryption key does not change the CR2SE
+ID, but version 1 defines no encryption-key rotation or selection mechanism.
+Previously encrypted objects remain decryptable only with the old X25519
+private key. Nodes operating as the same identity must coordinate the same
+persistent encryption pair by implementation-specific means.
 
 ---
 
@@ -841,19 +900,23 @@ Local private-key serialization formats are implementation-specific unless anoth
 
 ## 27. Identity Portability
 
-An identity may be moved or copied between CR2SE implementations by transferring the corresponding key pair.
+An identity may be moved or copied between CR2SE implementations by
+transferring its Ed25519 signing key pair and persistent X25519 encryption key
+pair.
 
 For example:
 
 ```text
 Rust CR2SE implementation
           |
-          | transfer identity key pair
+          | transfer both identity key pairs
           v
 Android CR2SE implementation
 ```
 
-If both implementations use the same key pair, both derive the same CR2SE ID.
+If both implementations use the same Ed25519 key pair, both derive the same
+CR2SE ID. They must also use the same persistent X25519 pair to decrypt the
+same version 1 identity-encrypted objects.
 
 The mechanism used to export, import, encrypt, or protect private key material is not defined by this document.
 
@@ -937,6 +1000,12 @@ Key algorithm:
 Public key:
     32 bytes
 
+Persistent encryption key agreement:
+    X25519
+
+Encryption public key:
+    32 bytes, bound by an Ed25519 signature
+
 ID hash:
     SHA-256
 
@@ -974,15 +1043,18 @@ Nodes per identity:
 
 Identities per node:
     exactly one
+
+Key replication among nodes:
+    implementation-specific; all nodes of one identity use the same two pairs
 ```
 
-The essential relationship is:
+The essential identity relationship is:
 
 ```text
-Private Key
+Ed25519 Private Key
      |
      v
-Public Key
+Ed25519 Public Key
      |
      | version + algorithm + public key
      v
@@ -998,6 +1070,19 @@ CR2SE ID
      +------> distributed lookup key
      |
      +------> ledger/trust identity
+```
+
+The separate encryption relationship is:
+
+```text
+Persistent X25519 Private Key
+     |
+     v
+Persistent X25519 Public Key
+     |
+     | Ed25519 binding signature
+     v
+CR2SE identity encryption capability
 ```
 
 The CR2SE ID identifies the cryptographic identity.
