@@ -85,8 +85,7 @@ Challenges
 
 Machines are not easily reachable from the network  
 Finding people and things on a vast network of smaller networks  
-Need many peers for redundancy  
+Need many independent peers for redundancy; one successful provider agreement is only one copy, never a backup or an availability guarantee
 Not useful without critical mass  
 Must be flexible to allow new uses  
 Data needs to be protected while in other people's computer  
-

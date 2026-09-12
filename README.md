@@ -8,7 +8,7 @@ Or in other words, on CR2SE each peer has their own currency.
 
 CR2SE principles are:  
 - Trusted peers are easy to reach  
-- Through shared resources and redundancy, data is persisted and accessed from any hardware, as long you have the keys  
+- Through shared resources and independently verified redundancy, data can remain available across peer and hardware failures, as long as you retain the keys
 - It is expensive for unknown, untrusted peers to reach peers, and impossibly expensive for reaching many untrusted peers  
 - Untrusted is the default instance  
 - Credits may be acquired in other ways (for example payments)  
@@ -34,6 +34,7 @@ In the end, is up to the implementations to decide how to implement it.
 - [Board](./Board.md) - Compact service offerings, wanted services, payment terms, and metadata  
 - [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks  
 - [Storage](./Storage.md) - Paid immutable byte leases, retrieval, renewal, removal, and availability checks
+- [Redundancy](./Redundancy.md) - Common rule that one provider is one copy, plus client requirements for independently verified replica sets
 - [Computation](./Computation.md) - Resource Sharing Service  
 - [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
 - [Messaging](./Messaging.md) - Paid signed message placement, discovery, recipient recovery, delivery status, and optional encryption

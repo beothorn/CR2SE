@@ -3,6 +3,11 @@
 CR2SE Storage is a standard, paid service for retaining an immutable sequence of
 bytes at another CR2SE identity for an agreed period.
 
+> **Reliability boundary:** one successful storage lease is one copy at one
+> provider. It is not a backup and must not be presented as redundant or
+> reliably persisted by itself. Applications needing availability across peer
+> or hardware failure must follow [CR2SE Redundancy](./Redundancy.md).
+
 The requester chooses the amount of data and the retention period within the
 limits advertised by the provider. The price is calculated deterministically
 from the advertised factors before the provider accepts the operation.
@@ -80,6 +85,11 @@ otherwise change the logical byte sequence associated with a lease.
 The same data may be stored in several independent leases, including leases at
 different providers. CR2SE Storage version 1 does not create replicas
 automatically and does not imply that one lease is redundant.
+
+Each provider returns success only for its own lease. A requested replica
+target, or one provider's promise to copy data elsewhere, is not evidence that
+another lease exists. The requester must obtain and retain a separate successful
+`store` result from every provider it counts.
 
 A lease is a retention commitment, not a promise that the provider is
 continuously online or that future operations keep their previous prices. An

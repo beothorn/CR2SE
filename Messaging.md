@@ -7,6 +7,12 @@ ends. The **sender** is the identity that creates and stores the message. The
 **Recovery** is the successful return of the complete stored message to an
 authenticated recipient.
 
+> **Reliability boundary:** one successful message placement is one copy at one
+> provider. It is not reliable delivery by itself. Senders requiring delivery
+> across peer or hardware failure must follow
+> [CR2SE Redundancy](./Redundancy.md) and obtain independent successful
+> placements.
+
 The sender selects the recipient, the message bytes, and the retention period.
 A provider retains the message and reveals it only to a peer that proves
 control of the recipient identity. The sender may later ask whether recovery
@@ -54,6 +60,10 @@ Each operation acts on one provider. Storing the same message at four providers
 creates four independent service agreements. Messaging version 1 does not
 replicate a message automatically and does not notify the other providers when
 one copy is recovered.
+
+A sender may count a provider only after receiving that provider's complete
+successful `store` result. A desired placement count or an attempted store is
+not a completed replica.
 
 All sizes are measured in bytes. All durations are whole seconds. All protocol
 integers use the ranges of their declared types; fixed-width integer arithmetic
