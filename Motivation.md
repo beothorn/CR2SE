@@ -51,6 +51,42 @@ ads, scraping, politics.
 The internet now is a place where the moment
 it is clear you are not a robot, you are a target.
 
+And the architecture of the Internet is 
+now optimized for it. 
+
+The social media, services and information 
+is currently highly centralized. 
+
+We now have in our pockets more 
+computation power than we have 
+ever dreamed. 
+
+And still, for communicating we connect 
+to a few centralized structures, on unrelated 
+places, using computation of server 
+far away while our own expensive devices 
+are idling, with plenty of free storage. 
+
+We just need the incentive to make it available to others. 
+
 It is time to go back, at least partially
 to a point where local reach is cheap, but
-global reach is expensive. 
+global reach is expensive. With decentralized structures, where the incentive to share resources is based on 
+mutual cooperation. Where we can store our data reliably, without depending on a single provider. 
+
+CR2SE is a tentative on creating a common 
+protocol to achieve:
+- Small trusted community of peers
+- Global reaching possible, but expensive
+- Data persisted reliably, no matter what hardware and where it is used
+- Resource sharing is incentivized through a tit for tat economy 
+
+Challenges 
+
+Machines are not easily reachable from the network 
+Finding people and things on a vast network of smaller networks 
+Need many peers for redundancy 
+Not useful without critical mass 
+Must be flexible to allow new uses 
+Data needs to be protected while in other people's computer 
+
