@@ -33,7 +33,6 @@ In the end, is up to the implementations to decide how to implement it.
 - [Ledger](./Ledger.md) - Manage credit, debit and trust  
 - [Board](./Board.md) - Compact service offerings, wanted services, payment terms, and metadata  
 - [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks  
-- [Glossary](./Glossary.md) - Common domain vocabulary  
 - [Storage](./Storage.md) - Paid immutable byte leases, retrieval, renewal, removal, and availability checks
 - [Computation](./Computation.md) - Resource Sharing Service  
 - [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
