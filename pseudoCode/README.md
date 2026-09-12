@@ -25,3 +25,5 @@ wire behavior that the corresponding specification does not define.
 - [Computation](./Computation.md) — runtime and offering validation,
   maximum-price authorization, metered execution, completion settlement,
   independent checks, and security boundaries.
+- [Storage](./Storage.md) — exact rational pricing, durable immutable leases,
+  authorized range retrieval, renewal, removal, byte challenges, and expiry.
