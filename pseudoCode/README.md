@@ -27,3 +27,19 @@ wire behavior that the corresponding specification does not define.
   independent checks, and security boundaries.
 - [Storage](./Storage.md) — exact rational pricing, durable immutable leases,
   authorized range retrieval, renewal, removal, byte challenges, and expiry.
+- [Node API](./NodeApi.md) — local IPC framing, request dispatch, connection
+  control, remote metadata retrieval, and service invocation.
+- [Ledger](./Ledger.md) — atomic owned/issued balances, transfers, claims,
+  reservations, persistence, and local trust policy.
+- [Services](./Services.md) — definition and schema validation, invocation
+  agreement, settlement, checks, and extension boundaries.
+- [Public File Sharing](./PublicFileSharing.md) — canonical manifests, share
+  identifiers, paid piece retrieval, catalogs, and content verification.
+- [Messaging](./Messaging.md) — signed placement, discovery, recipient
+  recovery, status, renewal, removal, and optional payload encryption.
+- [Open Social Messaging](./OpenSocialMessaging.md) — signed public feeds,
+  cursors, publication, verification, and deterministic feed merging.
+- [Page](./Page.md) — canonical static-resource lookup, fixed-price retrieval,
+  snapshot consistency, and local verification.
+- [Discovery](./Discovery.md) — signed records, indexing, resolution, lookup,
+  pagination, iterative search, and verification.
