@@ -79,6 +79,12 @@ sender-signed message for one recipient identity until recovery, removal, or
 expiration. Several placements may contain replicas of the same message. See
 [Messaging](./Messaging.md).
 
+**replica set**
+A requester's local collection of independently accepted provider agreements
+protecting the same recoverable item. A replica set is not a provider-side
+service or guarantee. One agreement is one copy and is never redundant by
+itself. See [Redundancy](./Redundancy.md).
+
 **discovery record**
 A canonical, signed, expiring identity-address, public-share-availability, or
 published-trust statement that peers may validate and copy independently. See
