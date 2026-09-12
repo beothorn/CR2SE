@@ -83,10 +83,10 @@ protocol to achieve:
 
 Challenges 
 
-Machines are not easily reachable from the network 
-Finding people and things on a vast network of smaller networks 
-Need many peers for redundancy 
-Not useful without critical mass 
-Must be flexible to allow new uses 
-Data needs to be protected while in other people's computer 
+Machines are not easily reachable from the network  
+Finding people and things on a vast network of smaller networks  
+Need many peers for redundancy  
+Not useful without critical mass  
+Must be flexible to allow new uses  
+Data needs to be protected while in other people's computer  
 
