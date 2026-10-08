@@ -12,8 +12,8 @@ A cryptographic identity whose control and CR2SE ID derive from an Ed25519 key
 pair and whose separate encryption capability uses a persistent X25519 pair
 bound by the Ed25519 key. An identity is independent of any person, machine,
 process, network address, or connection. One identity may operate through
-multiple nodes using the same two key pairs. See [Identity](./Identity.md) and
-[Encryption](./Encryption.md).
+multiple nodes using the same two key pairs. See [Identity](./modules/identity/README.md) and
+[Cryptography](./modules/cryptography/README.md).
 
 **CR2SE ID**
 The stable 256-bit identifier derived from a CR2SE identity's version, key algorithm, and public key. It identifies the identity; it is not a network address.
@@ -33,18 +33,33 @@ communication channel, not an identity, and it does not provide payload
 confidentiality by default.
 
 **Node API**
-The interface through which an application controls its local CR2SE node. It is distinct from the peer-to-peer network protocol. The Node API may be embedded in the application or exposed through local IPC. See [Node API](./NodeApi.md).
+The interface through which an application controls its local CR2SE node. It is distinct from the peer-to-peer network protocol. The Node API may be embedded in the application or exposed through local IPC. See [Node API](./modules/node-api/README.md).
+
+**module**
+A documented protocol responsibility, with its specification, pseudocode, and
+diagrams. A module need not be a separate process or software package.
+
+**Peer Protocol**
+The shared `cr2se.peer` stream protocol for metadata, service quotes, typed
+values, streamed bodies, checks, and ledger control. It runs over Transport.
+See [Peer Protocol](./modules/peer-protocol/README.md).
+
+**recovery catalog**
+Requester-owned metadata needed to find and reconstruct stored data on another
+device: provider identities and contacts, lease IDs, hashes, encryption format,
+and expiration times. It must be backed up along with, but protected separately
+from, private keys.
 
 ## Boards and services
 
 **Board**
-A versioned, machine-readable advertisement of the services a Board publisher provides or wants, including offering-specific payment terms and metadata. A Board contains compact summaries; complete service definitions are retrieved separately. See [Board](./Board.md).
+A versioned, machine-readable advertisement of the services a Board publisher provides or wants, including offering-specific payment terms and metadata. A Board contains compact summaries; complete service definitions are retrieved separately. See [Board](./modules/board/README.md).
 
 **Board publisher**
 The CR2SE identity that publishes a Board. A Board belongs to the identity, even when several nodes operate as that identity.
 
 **service**
-A versioned operation one CR2SE identity performs for another identity in exchange for credits. A service defines its input, output, success and failure behavior, and check. See [Services](./Services.md).
+A versioned operation one CR2SE identity performs for another identity in exchange for credits. A service defines its input, output, success and failure behavior, and check. See [Services](./modules/services/README.md).
 
 **offering**
 One Board entry advertising a particular service and its terms. An offering is identified by an ID unique within its Board. Multiple offerings may refer to the same service version while differing in price, capacity, duration, or other terms.
@@ -67,17 +82,27 @@ The separately retrievable, typed contract for an offering. It identifies the se
 **invocation**
 One attempt by a service requester to use a selected offering. The requester and provider agree on the offering, credit issuer, and price before execution.
 
+**quote**
+The exact offering snapshot and price authorization proposed before work.
+Computation quotes a formula and maximum price rather than a fixed final charge.
+
+**outcome unknown**
+An interrupted exchange whose result may already have been committed remotely.
+It does not justify assuming rollback or automatically repeating side effects.
+
 **check**
 A service-defined procedure through which the requester may evaluate whether the promised service was provided. A check can pass, fail, or be inconclusive; its result does not automatically reverse a credit payment.
 
 **storage lease**
-An accepted CR2SE Storage agreement binding immutable bytes, a requester identity, a provider identity, and an expiration time. Retrieval and renewal are separately charged using current provider offerings, while possession checks sample availability during the active lease. See [Storage](./Storage.md).
+An accepted CR2SE Storage agreement binding immutable bytes, a requester identity, a provider identity, and an expiration time. Retrieval and renewal are separately charged using current provider offerings, while possession checks sample availability during the active lease. See [Storage](./modules/storage/README.md).
 
 **message placement**
 An accepted CR2SE Messaging agreement in which one provider retains one
-sender-signed message for one recipient identity until recovery, removal, or
-expiration. Several placements may contain replicas of the same message. See
-[Messaging](./Messaging.md).
+sender-signed message for one recipient identity. Recovery ends pending delivery,
+but its complete retry output and receipt remain until the current expiration.
+Pending placements can be removed early. Several placements may contain replicas
+of the same message. See
+[Messaging](./modules/messaging/README.md).
 
 **replica set**
 A requester's local collection of independently accepted provider agreements
@@ -88,12 +113,12 @@ itself. See [Redundancy](./Redundancy.md).
 **discovery record**
 A canonical, signed, expiring identity-address, public-share-availability, or
 published-trust statement that peers may validate and copy independently. See
-[Discovery](./Discovery.md).
+[Discovery](./modules/discovery/README.md).
 
 **discovery index**
 One identity's local collection of discovery records and identities learned
 from authenticated connections. It is not a global directory or membership
-list. See [Discovery](./Discovery.md).
+list. See [Discovery](./modules/discovery/README.md).
 
 **indexer**
 An identity that provides the CR2SE Discovery service using a discovery index.
@@ -101,7 +126,7 @@ An identity that provides the CR2SE Discovery service using a discovery index.
 ## Credits and trust
 
 **credit**
-A non-negative integer unit issued by one CR2SE identity. Credits from different issuers are distinct and need not have equal value. A credit has practical value only to the extent that its issuer or another identity chooses to accept it. See [Ledger](./Ledger.md).
+A non-negative integer unit issued by one CR2SE identity. Credits from different issuers are distinct and need not have equal value. A credit has practical value only to the extent that its issuer or another identity chooses to accept it. See [Ledger](./modules/ledger/README.md).
 
 **credit issuer** (short form: **issuer**)
 The CR2SE identity that creates a credit and controls the terms under which that credit is recognized or accepted.
