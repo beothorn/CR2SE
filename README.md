@@ -9,19 +9,7 @@ resources; reaching more peers requires more relationships and resources.
 unchanged. The protocol supports people, organizations, software agents, and
 networks of LLMs without treating any of them as a special identity type.
 
-<<<<<<< HEAD
-CR2SE principles are:  
-- Trusted peers are easy to reach  
-- Through shared resources and independently verified redundancy, data can remain available across peer and hardware failures, as long as you retain the keys
-- It is expensive for unknown, untrusted peers to reach peers, and impossibly expensive for reaching many untrusted peers  
-- Untrusted is the default instance  
-- Credits may be acquired in other ways (for example payments)  
-- Credits may be distributed however a peer choose, but never give another peer infinite credits.
-- CR2SE can be a channel for any non real time service  
-- Everything costs credits. This is by design to prevent abuse on all services.  
-=======
 ## Start here
->>>>>>> 35ca65d (Restructure protocol specification into modules and define PoC interfaces)
 
 1. Read the [motivation](./Motivation.md) and [architecture](./Architecture.md).
 2. Use the [glossary](./Glossary.md) for shared terms.
@@ -39,23 +27,6 @@ Each module has a `README.md` specification, a `pseudocode/` folder, and a
 `diagrams/` folder. “Module” describes a protocol responsibility, not a required
 process, package, class, or programming language.
 
-<<<<<<< HEAD
-- [Network](./Network.md) - Authenticated, integrity-protected, multiplexed TCP transport protocol
-- [NodeApi](./NodeApi.md) - Commands for boards, service definitions, invocation, and node control  
-- [Identity](./Identity.md) - Identification  
-- [Encryption](./Encryption.md) - Signing, encrypting, verifying  
-- [Ledger](./Ledger.md) - Manage credit, debit and trust  
-- [Board](./Board.md) - Compact service offerings, wanted services, payment terms, and metadata  
-- [Services](./Services.md) - Separately retrievable service definitions, input/output schemas, types, and checks  
-- [Storage](./Storage.md) - Paid immutable byte leases, retrieval, renewal, removal, and availability checks
-- [Redundancy](./Redundancy.md) - Common rule that one provider is one copy, plus client requirements for independently verified replica sets
-- [Computation](./Computation.md) - Resource Sharing Service  
-- [PublicFileSharing](./PublicFileSharing.md) - Paid retrieval of public, content-addressed files and directory trees
-- [Messaging](./Messaging.md) - Paid signed message placement, discovery, recipient recovery, delivery status, and optional encryption
-- [OpenSocialMessaging](./OpenSocialMessaging.md) - Peers delivery public messages, the client can gather all of them to show as a combined stream of messages 
-- [Page](./Page.md) - Static HTML Page Hosting Service   
-- [Discovery](./Discovery.md) - Find peers and services  
-=======
 | Module | Responsibility |
 |---|---|
 | [Identity](./modules/identity/README.md) | Stable IDs, key ownership, contacts, and recovery boundaries. |
@@ -97,4 +68,3 @@ Pseudocode and diagrams explain those rules; they do not add new wire formats.
 Service-specific rules define the operation; Peer Protocol defines its encoding;
 Transport defines frames. Local implementation policy may refuse new work, but
 must not silently alter accepted terms or canonical formats.
->>>>>>> 35ca65d (Restructure protocol specification into modules and define PoC interfaces)
