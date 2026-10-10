@@ -7,47 +7,92 @@ paid relationships; there is no implicit free global broadcast.
 
 ## Layers
 
-These are responsibilities, not required packages or deployment processes.
-An embedded library and a standalone node can implement the same protocol.
+These are independently implementable responsibilities, not required packages
+or deployment processes. Each module exposes explicit inputs and outputs.
+[Module contracts](./ModuleContracts.md) define authority, state ownership,
+streaming, dependency substitution and recovery across those boundaries.
+
+The required core is Identity, Cryptography, Transport, Peer Control (the
+Peer Protocol module), Ledger, Board, Services and Storage. Services is necessary
+to invoke and settle Storage. Node API and the other six service families are
+optional. Required describes a useful node profile, not what every individual
+module must load. A module can be built with substitutes for its dependencies.
 
 ```mermaid
 flowchart TB
-    Humans[Human-facing clients] --> API[Node API or embedded calls]
-    Agents[Software agents and LLM clients] --> API
-    API --> Standard[Standard and custom services]
-    Standard --> ServiceRules[Service contracts and checks]
-    Standard --> Peer[Peer Protocol messages and values]
+    Humans[Human-facing clients] --> Local[Authorized local control]
+    Agents[Software agents and LLM clients] --> Local
+    Local -. optional binding .-> API[Node API]
+    Local --> Peer[Peer Control / Peer Protocol]
+    API --> Peer
     Peer --> Transport[Authenticated multiplexed Transport]
     Transport --> TCP[TCP]
-    Board[Board offering snapshots] --> ServiceRules
-    Ledger[Local ledger and trust] --> ServiceRules
-    Identity[Identity] --> Peer
-    Identity --> Transport
-    Crypto[Cryptographic primitives] --> Identity
-    Crypto --> Transport
-    Crypto --> Standard
+    Peer --> Board[Board snapshots]
+    Peer --> ServiceRules[Services invocation coordinator]
+    Peer --> Ledger[Ledger]
+    ServiceRules --> Board
+    ServiceRules --> Ledger
+    ServiceRules --> Storage[Required Storage handler]
+    ServiceRules -. registered handlers .-> Optional[Optional service families]
+    Transport --> Identity[Identity]
+    Identity --> Crypto[Cryptography]
+    Transport --> Crypto
 ```
 
-Arrows here show information flowing into or being used by another layer.
+Arrows show a caller using a capability through its contract. Responses return
+over that same boundary; the drawing does not dictate thread or process layout.
 Service policy does not change Transport frames. Content encryption is selected
 above Transport; mandatory frame integrity does not hide the payload.
 
+## Composition and independent state
+
+A monolith may implement these boundaries as calls and transactions. Separate
+logical units may use adapters; separate processes may use authenticated IPC/RPC
+and independent stores. Preserve the same input validation, exact values,
+caller authority, stream completion and failure semantics in all three cases.
+No module may rely on reaching into another module's private tables or objects.
+
+Board owns an atomic publication of offerings and definitions. Services owns
+accepted invocation context and coordination; Ledger owns credit/trust state;
+each family owns its resources and replay guards. Board consumes the Services
+schema format without requiring its running coordinator. Services discovers
+handlers through local composition, not through importing their internals.
+This avoids a startup cycle between publication, schemas and handler dispatch.
+
+Local persistence is a platform capability. Ledger does not buy a Storage lease
+to save its balances, and Messaging does not need the Storage service to retain
+messages. An implementation may share a database engine while retaining the
+same ownership boundaries. For independent databases, use the
+[durable coordination contract](./ModuleContracts.md#durable-effects-across-process-boundaries)
+to recover local service and accounting effects without requiring a shared
+transaction manager or pretending an IPC timeout proves rollback.
+
+Startup validates the configured dependency ports and registers usable
+capabilities. Missing optional handlers produce no provided offering and fail
+unsupported invocations before acceptance. Existing leases, receipts and replay
+records remain obligations even when new offerings are disabled. Configured
+contacts and local administration make the core usable without Discovery or
+Node API. See the [minimum demonstration](./PoC.md#minimum-useful-profile).
+
 ## Dependencies between service families
 
-All service families use Services, Board, Ledger, and Peer Protocol. The graph
-below shows additional reuse. An arrow means “uses the format or capability of”.
+All network service invocations use Services, Board, Ledger and Peer Control.
+A family handler consumes Services context; adapters supply those other core
+capabilities without giving the handler direct database or socket access. The
+graph below shows additional format/capability reuse, not mandatory process
+deployment. Discovery lookup is optional for clients with known contacts.
 
 ```mermaid
 flowchart LR
-    Files[Public File Sharing] --> Discovery[Discovery share-record format]
+    Files[Public File Sharing] --> Records[Discovery share-record codec]
     Feeds[Public Feeds] --> Identity[Identity and signatures]
     Messaging[Messaging] --> Identity
     Messaging --> Crypto[Cryptography]
     Discovery --> Identity
     Storage[Storage clients] --> Crypto
-    Pages[Static Pages] --> Identity
+    Pages[Static Pages] --> Provenance[Authenticated publisher context]
     Compute[Computation] --> Runtime[Locally authorized runtime]
-    Files -. optional host lookup .-> Discovery
+    Files -. optional host lookup .-> Discovery[Optional Discovery indexer]
     Feeds -. optional publisher lookup .-> Discovery
     Pages -. optional publisher lookup .-> Discovery
 ```
@@ -78,6 +123,7 @@ flowchart TB
     Work --> Index[Index placements and included checks]
 ```
 
+This is a logical view of one participant, not a required shared database.
 Databases, threads, event loops, file layouts, and replication mechanisms are
 implementation choices. The visible invariants are not: preserve balances,
 accepted obligations, immutable data, replay guards, and exact outputs across

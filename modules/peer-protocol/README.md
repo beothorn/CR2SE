@@ -1,5 +1,18 @@
 # Peer Protocol
 
+## Module boundary
+
+**Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Implements Peer Control: the shared metadata, invocation and ledger-control
+binding. Consumes Transport streams and Board, Services and Ledger ports; the
+wire name remains `cr2se.peer`.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 This module binds Boards, service definitions, invocations, checks, and ledger
 control to Transport streams. Without a shared binding, matching service schemas
 would still produce incompatible clients. This specification is language-neutral.

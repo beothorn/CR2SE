@@ -1,5 +1,17 @@
 # Cryptography
 
+## Module boundary
+
+**Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns cryptographic operations and transient secrets. Consumes platform
+randomness and protected key handles; no running CR2SE module is required.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Cryptography supplies signatures, key agreement, authenticated encryption, and
 hashing. It proves specific facts about keys and bytes. It does not establish
 trust, authorize resource use, or prove that returned content is true or safe.

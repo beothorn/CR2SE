@@ -1,5 +1,18 @@
 # Public File Sharing
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns hosted shares, manifests and catalogs. Consumes Services, Identity,
+Cryptography, local content and the Discovery share-record format; a running
+Discovery indexer is optional.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Retrieve public immutable files by the hash of their canonical manifest.
 Verify pieces independently so downloads can resume or use several hosts.
 Hosting a share is separate from paying someone to retain it.

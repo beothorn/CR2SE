@@ -1,5 +1,18 @@
 # Computation
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns bounded runtime attempts and completion records. Consumes Services
+context and an explicitly authorized platform runtime; other service families
+are not dependencies.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Run one source string under an advertised language/version and a time limit.
 Agree a maximum charge first. A result, language error, or reached time limit
 is a billable completion; failure of the service itself is uncharged.

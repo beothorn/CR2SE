@@ -1,5 +1,18 @@
 # Storage
 
+## Module boundary
+
+**Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns paid immutable leases and their byte evidence. Consumes Services context,
+Cryptography and local durable byte/metadata ports. It is not the persistence
+backend required by other modules.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Store exact bytes under a paid lease, then retrieve ranges, renew, remove, or
 check them using current provider terms. Private data should be encrypted by
 the requester before upload. Replication is a requester responsibility.
@@ -15,7 +28,7 @@ bytes at another CR2SE identity for an agreed period.
 > **Reliability boundary:** one successful storage lease is one copy at one
 > provider. It is not a backup and must not be presented as redundant or
 > reliably persisted by itself. Applications needing availability across peer
-> or hardware failure must follow [CR2SE Redundancy](./Redundancy.md).
+> or hardware failure must follow [CR2SE Redundancy](../../Redundancy.md).
 
 The requester chooses the amount of data and the retention period within the
 limits advertised by the provider. The price is calculated deterministically

@@ -76,11 +76,11 @@ agreements expire.
 
 Services determine when two agreements protect the same item:
 
-- For [Storage](./Storage.md), each lease is one agreement. Replicas contain
+- For [Storage](./modules/storage/README.md), each lease is one agreement. Replicas contain
   identical bytes and therefore have the same `contentHash` and `sizeBytes`,
   but have independently returned lease IDs from different provider
   identities.
-- For [Messaging](./Messaging.md), each placement is one agreement. Replicas
+- For [Messaging](./modules/messaging/README.md), each placement is one agreement. Replicas
   use the same sender-generated `messageId` and identical signed payload, but
   have independently returned placement IDs from different provider
   identities.

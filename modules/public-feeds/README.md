@@ -1,5 +1,18 @@
 # Public Feeds
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns locally published signed feed messages. Consumes Services, Identity,
+Cryptography and local persistence; Messaging and Discovery runtimes are not
+required.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Publish signed public messages and let readers buy bounded pages of a feed.
 Each provider serves its own identity's feed. Readers verify and combine feeds
 locally. The wire identifier remains `cr2se.open-social-messaging`.

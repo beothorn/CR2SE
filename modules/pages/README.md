@@ -1,5 +1,18 @@
 # Static Pages
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns static resource snapshots. Consumes Services context, authenticated
+publisher provenance, Cryptography and a local content port; other service
+families are not dependencies.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Retrieve a static resource from an authenticated publisher by canonical path.
 Each request has a fixed price and a maximum byte count. The root is an HTML
 document; other paths serve assets. The wire identifier remains `cr2se.page`.

@@ -36,13 +36,31 @@ confidentiality by default.
 The interface through which an application controls its local CR2SE node. It is distinct from the peer-to-peer network protocol. The Node API may be embedded in the application or exposed through local IPC. See [Node API](./modules/node-api/README.md).
 
 **module**
-A documented protocol responsibility, with its specification, pseudocode, and
-diagrams. A module need not be a separate process or software package.
+A protocol responsibility with its specification, inputs, outputs, pseudocode
+and diagrams. It can be implemented independently against declared contracts
+and dependencies, then composed as a monolith, logical component or process.
+It need not operate without dependencies. See [module contracts](./ModuleContracts.md).
+
+**minimum useful node profile**
+The required Identity, Cryptography, Transport, Peer Control, Ledger, Board,
+Services and Storage capabilities, sufficient for paid immutable storage and
+recovery. Node API and other service families are optional. Required describes
+capabilities, not a deployment layout; an advertised optional capability must
+still fulfill its entire versioned contract.
+
+**platform port**
+An implementation-supplied interface such as local durable persistence, key
+storage, randomness, clocks, sockets or an execution runtime. Local persistence
+is independent of the paid CR2SE Storage service.
 
 **Peer Protocol**
 The shared `cr2se.peer` stream protocol for metadata, service quotes, typed
 values, streamed bodies, checks, and ledger control. It runs over Transport.
 See [Peer Protocol](./modules/peer-protocol/README.md).
+
+**Peer Control**
+The coordination and wire-binding responsibility implemented by the Peer
+Protocol module. It is not an additional module or a new wire identifier.
 
 **recovery catalog**
 Requester-owned metadata needed to find and reconstruct stored data on another

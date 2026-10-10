@@ -1,8 +1,23 @@
 # Node API
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns application sessions, request correlation and blob handles. Adapts
+Transport, Peer Control and Services ports. A node can instead supply another
+authorized local control interface.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 The Node API lets an application control its local node. It is not the peer wire
-protocol. Libraries may expose embedded calls; standalone nodes expose the
-portable loopback interface below. Both have the same logical behavior.
+protocol. Implementations choosing this optional interface may expose embedded
+calls or the portable loopback interface below. Both have the same logical
+behavior. A standalone node can instead use another authorized local control
+surface; the standard Node API binding is not required by the core profile.
 
 See [pseudocode](./pseudocode/README.md), [diagrams](./diagrams/README.md), and
 [Peer Protocol](../peer-protocol/README.md) for remote exchanges.

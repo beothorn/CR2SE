@@ -1,5 +1,17 @@
 # Identity
 
+## Module boundary
+
+**Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns persistent identity credentials and contacts. Consumes Cryptography and a
+protected platform key store; Discovery lookup is optional.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 An identity has an Ed25519 key for signing and a separate persistent X25519
 key for decryption. Its ID comes from the Ed25519 public key. A person,
 organization, device, program, or network of agents may control an identity;

@@ -6,7 +6,12 @@ identifiers, cryptographic byte layouts, and existing deterministic vectors.
 
 | Decision | Reason and effect |
 |---|---|
-| Use modules, with colocated pseudocode and diagrams | Names describe responsibilities without requiring one process per component. |
+| Use modules with specifications, inputs, outputs, pseudocode and diagrams | Explicit boundaries support independent implementation and monolith, component or process composition. |
+| Define a minimum useful node profile | Identity, Cryptography, Transport, Peer Control, Ledger, Board, Services and Storage provide paid retention/recovery; Node API and other families are optional. |
+| Require Services alongside Storage | Schema, invocation, check and settlement coordination are necessary to use the required resource service. |
+| Separate local persistence from the paid Storage service | Ledger, keys and other family stores can start and recover without buying leases or creating circular dependencies. |
+| Distinguish shared codecs from optional runtimes | File catalogs use Discovery's share-record format without needing an indexer; configured contacts suffice for core bootstrap. |
+| Define recoverable local coordination across stores | Split processes preserve service/accounting invariants through prepared effects, durable decisions and idempotent status/commit ports. No generic peer replay or atomic fair exchange is added. |
 | Rename Network to Transport and Encryption to Cryptography | The former handles streams; the latter also signs and hashes. |
 | Rename Open Social Messaging to Public Feeds and Page to Static Pages | Clearer documentation names; wire identifiers stay unchanged. |
 | Add Peer Protocol | Defines previously missing metadata, invocation, streaming, quote, check, and ledger-control messages. |

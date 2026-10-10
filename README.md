@@ -13,9 +13,10 @@ networks of LLMs without treating any of them as a special identity type.
 
 1. Read the [motivation](./Motivation.md) and [architecture](./Architecture.md).
 2. Use the [glossary](./Glossary.md) for shared terms.
-3. Follow the [PoC implementation guide](./PoC.md) in a separate project.
-4. Read the module specifications below, then their pseudocode and diagrams.
-5. Review [design decisions](./Decisions.md) for clarified rules and limits.
+3. Read the [independent module contracts and minimum profile](./ModuleContracts.md).
+4. Follow the [PoC implementation guide](./PoC.md) in a separate project.
+5. Read each module's specification, inputs, outputs, pseudocode and diagrams.
+6. Review [design decisions](./Decisions.md) for clarified rules and limits.
 
 This repository specifies a **draft version 1** protocol. It is not a working
 implementation or a claim of production security. Requirements are concrete
@@ -23,27 +24,39 @@ enough to implement and test; the PoC must still validate them in practice.
 
 ## Modules
 
-Each module has a `README.md` specification, a `pseudocode/` folder, and a
-`diagrams/` folder. “Module” describes a protocol responsibility, not a required
-process, package, class, or programming language.
+Each module has a `README.md` specification, `inputs/` and `outputs/` contracts,
+`pseudocode/`, and `diagrams/`. A module is independently implementable against
+its contracts and declared dependencies. Implementations may compose modules
+as a monolith, separate logical components, or separate processes. No particular
+package, class, database or programming language is prescribed.
 
-| Module | Responsibility |
-|---|---|
-| [Identity](./modules/identity/README.md) | Stable IDs, key ownership, contacts, and recovery boundaries. |
-| [Cryptography](./modules/cryptography/README.md) | Exact signing, key binding, and encryption formats. |
-| [Transport](./modules/transport/README.md) | Authenticated TCP, protected frames, and multiplexed streams. |
-| [Peer Protocol](./modules/peer-protocol/README.md) | Shared control messages, quotes, value encoding, and streaming. |
-| [Ledger](./modules/ledger/README.md) | Issuer-specific credits, settlement, transfers, claims, and trust. |
-| [Board](./modules/board/README.md) | Compact provided/wanted offerings and current terms. |
-| [Services](./modules/services/README.md) | Contracts, schemas, invocation lifecycle, and verification. |
-| [Node API](./modules/node-api/README.md) | Embedded control and authenticated local IPC for clients. |
-| [Storage](./modules/storage/README.md) | Immutable leases, ranges, renewal, removal, and paid checks. |
-| [Computation](./modules/computation/README.md) | Bounded runtime evaluation and metered completion. |
-| [Messaging](./modules/messaging/README.md) | Signed placements, recipient recovery, receipts, and release credits. |
-| [Discovery](./modules/discovery/README.md) | Paid indexing and lookup of signed addresses, shares, and trust. |
-| [Public File Sharing](./modules/file-sharing/README.md) | Canonical manifests, catalogs, and verified piece retrieval. |
-| [Public Feeds](./modules/public-feeds/README.md) | Signed public messages and client-side feed aggregation. |
-| [Static Pages](./modules/pages/README.md) | Paid retrieval of static HTML and associated resources. |
+| Module | Minimum profile | Responsibility |
+|---|---|---|
+| [Identity](./modules/identity/README.md) | Required | Stable IDs, key ownership, contacts and recovery boundaries. |
+| [Cryptography](./modules/cryptography/README.md) | Required | Signing, key binding, hashing and encryption formats. |
+| [Transport](./modules/transport/README.md) | Required | Authenticated TCP, protected frames and multiplexed streams. |
+| [Peer Control / Peer Protocol](./modules/peer-protocol/README.md) | Required | Shared control messages, quotes, values and streaming. |
+| [Ledger](./modules/ledger/README.md) | Required | Credits, reservations, settlement, transfers, claims and trust. |
+| [Board](./modules/board/README.md) | Required | Consistent compact offerings and separately retrieved definitions. |
+| [Services](./modules/services/README.md) | Required | Typed contracts, invocation lifecycle and verification for all families. |
+| [Storage](./modules/storage/README.md) | Required | Immutable leases, ranges, renewal, removal and paid checks. |
+| [Node API](./modules/node-api/README.md) | Optional | Standard embedded/local IPC interface for applications. |
+| [Computation](./modules/computation/README.md) | Optional | Bounded runtime evaluation and metered completion. |
+| [Messaging](./modules/messaging/README.md) | Optional | Signed placements, recovery, receipts and release credits. |
+| [Discovery](./modules/discovery/README.md) | Optional | Paid indexing and lookup of signed records. |
+| [Public File Sharing](./modules/file-sharing/README.md) | Optional | Canonical manifests, catalogs and verified piece retrieval. |
+| [Public Feeds](./modules/public-feeds/README.md) | Optional | Signed public messages and local feed aggregation. |
+| [Static Pages](./modules/pages/README.md) | Optional | Paid retrieval of static HTML and assets. |
+
+The minimum profile can store and recover paid immutable data with configured
+contacts and finite trust/credit policy. Services is required because Storage
+needs its contract and invocation rules. Optional capabilities are omitted from
+provided offerings when unavailable; once advertised, their full versioned
+contracts apply. [Module contracts](./ModuleContracts.md) define deployment,
+state ownership, dependency handling, failure and recovery expectations.
+
+[Redundancy](./Redundancy.md) defines the cross-module rule that one provider is
+one copy and applications must verify independent replica agreements.
 
 The [pseudocode index](./Pseudocode.md) links algorithms and existing test vectors.
 The architecture explains layers and dependencies; each module contains focused
@@ -62,7 +75,8 @@ sequence diagrams. Diagrams use fenced Mermaid blocks following
   not redundancy, and possession of a key alone does not locate stored data.
 - Descriptions and returned content are untrusted input, including for agents.
 
-Module specifications define required behavior. **Must** is required, **must
+Module specifications and input/output contracts define required behavior for
+implemented capabilities. **Must** is required, **must
 not** is forbidden, **should** is a recommendation, and **may** is optional.
 Pseudocode and diagrams explain those rules; they do not add new wire formats.
 Service-specific rules define the operation; Peer Protocol defines its encoding;

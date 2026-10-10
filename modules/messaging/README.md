@@ -1,5 +1,18 @@
 # Messaging
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns placements, receipts and replay results. Consumes Services, Identity,
+Cryptography and local persistence. Neither the Storage service nor the
+Discovery indexer is needed.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Place a signed message at a provider for one recipient. The recipient can
 discover and recover it later; the sender can check its status, extend retention,
 or remove a pending placement for agreed release credits. Encrypt private
@@ -20,7 +33,7 @@ authenticated recipient.
 > **Reliability boundary:** one successful message placement is one copy at one
 > provider. It is not reliable delivery by itself. Senders requiring delivery
 > across peer or hardware failure must follow
-> [CR2SE Redundancy](./Redundancy.md) and obtain independent successful
+> [CR2SE Redundancy](../../Redundancy.md) and obtain independent successful
 > placements.
 
 The sender selects the recipient, the message bytes, and the retention period.

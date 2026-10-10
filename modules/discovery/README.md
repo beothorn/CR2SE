@@ -1,5 +1,18 @@
 # Discovery
 
+## Module boundary
+
+**Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns paid index placements, lookup state and included checks. Consumes
+Services, Identity, Cryptography and local persistence. Its canonical record
+formats can be implemented separately from the optional indexer.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 Pay known peers to retain or find signed, expiring address, share, and trust
 records. Follow referrals only within your own relationship and spending budgets.
 An index is one peer's view, not a complete global directory.

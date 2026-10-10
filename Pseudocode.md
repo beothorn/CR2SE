@@ -8,6 +8,14 @@ threads, async runtimes, or language-specific APIs.
 The specification documents remain authoritative. Pseudocode must not add a
 wire behavior that the corresponding specification does not define.
 
+Each module also defines [inputs and outputs](./ModuleContracts.md). A helper
+call in pseudocode denotes a logical contract operation, not permission to
+import another module's private state. Implement it with direct calls, an
+adapter or authenticated IPC/RPC. Algorithm-local structures are illustrative
+and are not a shared-memory requirement. Optional family pseudocode applies
+only when that capability is implemented; Services and Storage belong to the
+minimum useful profile.
+
 ## Modules
 
 - [Transport](./modules/transport/pseudocode/README.md) — TCP framing, connection authentication and
@@ -46,8 +54,10 @@ wire behavior that the corresponding specification does not define.
 - [Peer Protocol](./modules/peer-protocol/pseudocode/README.md) — bounded records,
   quote acceptance, typed value binding, streaming, and wanted-service roles.
 
-`transaction` means an atomic durable local change, not a distributed database
-transaction. `reserveCharge` and similar helpers delegate to Ledger's settlement
+`transaction` means an atomic durable logical change within one node. It can use
+one database transaction or the [recoverable coordination contract](./ModuleContracts.md#durable-effects-across-process-boundaries)
+across module stores; it does not require shared tables or atomic transactions
+between independent peers. `reserveCharge` and similar helpers delegate to Ledger's settlement
 mode: spending provider credits, issuing requester credits, or arranging an
 issuer-mediated transfer. An included check or recognized retransmission uses
 its existing entitlement. `returnAndCommitExactly` is shorthand for validated

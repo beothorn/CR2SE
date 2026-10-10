@@ -5,6 +5,40 @@ exchange between independent nodes, followed by recovery on replacement
 hardware. This guide does not require a particular programming language,
 database, operating system, or UI framework.
 
+## Minimum useful profile
+
+The [required modules](./ModuleContracts.md#required-and-optional-capabilities)
+are Identity, Cryptography, Transport, Peer Control / Peer Protocol, Ledger,
+Board, Services and Storage. A minimum implementation can use authorized local
+calls, configured peer contacts and finite trust/credit grants. It needs neither
+Node API nor the six optional service families. This profile is a useful paid
+storage node, not just a handshake or empty Board demonstration.
+
+Verify it with two separately operated identities:
+
+1. Authenticate a configured contact and retrieve a consistent Storage offering
+   and definition using Peer Control.
+2. Reserve finite credits, agree the price and store a nonempty object. Retain
+   the lease ID, provider contact, hash, expiration and encryption metadata.
+3. Restart the provider and retrieve/verify the object with a new paid request.
+4. Exercise renewal, paid byte check and removal, including unauthorized access,
+   stale expiration, concurrent reservations and uncertain output delivery.
+5. Run with Node API and every optional family absent. Unsupported offerings
+   must not appear as provided capabilities or be silently dispatched elsewhere.
+
+Before integration, implement each module against its `inputs/` and `outputs/`
+contracts with substitutes for dependencies. Compare direct-call behavior with
+serialized adapters for exact integers, scoped authority, byte streaming and
+failures. For a process-separated composition, inject lost replies/restarts at
+the prepare, decision and commit boundaries and verify one local effect without
+re-executing accepted work. Existing cryptographic/wire vectors stay unchanged.
+
+The topology, stages and full matrix below describe the **full-feature PoC**.
+They remain useful additional coverage; they do not make optional modules
+mandatory for every CR2SE node. Report minimum-profile and full-feature results
+separately. Independent replicas require a third identity and retained recovery
+metadata as in the story below.
+
 ## Topology and initial policy
 
 Use three identities: Alice, Bob, and Carol. Run each with its own keys, durable
@@ -24,14 +58,16 @@ Keep test identity keys separate from real identities.
 | 1. Primitives | Identity, Cryptography, exact integer/byte codecs | Existing deterministic vectors match byte for byte. |
 | 2. Connections | Transport handshake, integrity, stream state | Both peers can initiate streams on one connection; malformed tags close it. |
 | 3. Common exchange | Board, Services, Peer Protocol, Ledger | Fetch a definition, accept a quote, stream input, return output, settle once locally. |
-| 4. Client boundary | Embedded API and authenticated Node API | A separate client uses blobs and explicit issuer/spending bounds without key access. |
+| 4. Client boundary | Authorized embedded control; optional standard Node API | A client uses explicit issuer/spending bounds; the full PoC also tests authenticated IPC and blobs. |
 | 5. Cooperative storage | Wanted work, paid leases, encrypted replicas | Earn credits, place two copies, then recover with one provider offline. |
 | 6. Remaining families | Computation, Messaging, Discovery, Files, Feeds, Pages | Exercise every operation and check in the feature matrix below. |
 | 7. Failure and portability | Journaling, retry guards, independent codec/client | Restart after injected failures and restore application data on a fresh node. |
 
-Early stages are development milestones, not removal of later features. Do not
-describe the PoC as covering the full draft until the complete feature matrix
-passes. A runtime may initially advertise one exact supported language/version;
+For the minimum profile, complete the applicable core stages and minimum
+demonstration above. For the full-feature PoC, early stages are development
+milestones: do not claim full draft coverage until the complete feature matrix
+passes. An optional Computation runtime may initially advertise one exact
+supported language/version;
 other node and client implementation languages remain unrestricted.
 
 ## End-to-end story
@@ -56,7 +92,7 @@ of every replica and catalog.
 
 ## Full feature matrix
 
-| Module | Required demonstrations |
+| Module | Demonstrations required for full-feature coverage |
 |---|---|
 | Identity | Creation; binary/text round trip; case normalization; contact QR; expected-ID mismatch; same-identity connection. |
 | Cryptography | Key binding; generic self/recipient encryption; tampered header/tag rejection; no plaintext before authentication. |

@@ -1,5 +1,18 @@
 # Ledger
 
+## Module boundary
+
+**Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns trust, balances, reservations and accounting replay state. Consumes
+Identity/Cryptography and local durable persistence; Services coordinates
+service effects through its ports.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 The ledger is one identity's durable record of credits and trust. Credits are
 issued by individual identities; they are not a global currency. There is no
 central ledger, consensus, guaranteed exchange rate, or forced reconciliation.

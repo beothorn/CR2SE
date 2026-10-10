@@ -1,5 +1,18 @@
 # Services
 
+## Module boundary
+
+**Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
+Owns typed invocation, handler dispatch and local coordination. Consumes Board
+snapshots, Ledger ports and registered family handlers. Storage uses this
+required common contract; optional families remain optional.
+
+Implement against the [input contract](./inputs/README.md) and
+[output contract](./outputs/README.md), using the shared
+[composition and recovery rules](../../ModuleContracts.md).
+This boundary supports a monolith, separate logical components or separate
+processes without changing the service or wire contract below.
+
 A service is a versioned contract for work exchanged for credits. A **requester**
 asks for work and pays; a **provider** performs it. These roles belong to one
 invocation and are independent of TCP direction or who published the Board.
@@ -7,6 +20,12 @@ invocation and are independent of TCP direction or who published the Board.
 The seven standard families are Storage, Computation, Public File Sharing,
 Messaging, Discovery, Public Feeds, and Static Pages. Their existing
 `cr2se.*` identifiers remain unchanged. Applications may define custom services.
+
+Storage is the required family in the minimum useful node profile; the other
+six families are optional. The Services module supplies their shared contract
+machinery and does not require every family handler to be installed. Provider
+dispatch uses the declared handler ports, and requester codecs can be provided
+without installing the corresponding local provider.
 
 See [pseudocode](./pseudocode/README.md), [diagrams](./diagrams/README.md), and
 [Peer Protocol](../peer-protocol/README.md) for the shared wire binding.
