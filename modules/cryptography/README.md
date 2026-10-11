@@ -12,6 +12,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Cryptography supplies signatures, key agreement, authenticated encryption, and
 hashing. It proves specific facts about keys and bytes. It does not establish
 trust, authorize resource use, or prove that returned content is true or safe.

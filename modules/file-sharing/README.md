@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Retrieve public immutable files by the hash of their canonical manifest.
 Verify pieces independently so downloads can resume or use several hosts.
 Hosting a share is separate from paying someone to retain it.

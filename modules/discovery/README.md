@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Pay known peers to retain or find signed, expiring address, share, and trust
 records. Follow referrals only within your own relationship and spending budgets.
 An index is one peer's view, not a complete global directory.

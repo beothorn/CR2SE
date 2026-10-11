@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 A service is a versioned contract for work exchanged for credits. A **requester**
 asks for work and pays; a **provider** performs it. These roles belong to one
 invocation and are independent of TCP direction or who published the Board.

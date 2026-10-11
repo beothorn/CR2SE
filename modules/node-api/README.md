@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 The Node API lets an application control its local node. It is not the peer wire
 protocol. Implementations choosing this optional interface may expose embedded
 calls or the portable loopback interface below. Both have the same logical

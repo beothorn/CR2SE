@@ -249,8 +249,8 @@ Peer Control applies its existing result/end and outcome-unknown rules.
 
 ## Independent verification and integration
 
-Every module's outputs document includes acceptance examples. A module can run
-them with contract-compatible fakes for dependencies and platform ports. Test
+Every module has an `acceptanceTests/README.md` suite with expected results. A
+module can run it with contract-compatible fakes for dependencies and platform ports. Test
 invalid input as well as normal input, exact values at boundaries, authority,
 dependency timeout, and restart where state is durable. Existing canonical
 vectors remain unchanged and authoritative for byte interoperability.

@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Retrieve a static resource from an authenticated publisher by canonical path.
 Each request has a fixed price and a maximum byte count. The root is an HTML
 document; other paths serve assets. The wire identifier remains `cr2se.page`.

@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Run one source string under an advertised language/version and a time limit.
 Agree a maximum charge first. A result, language error, or reached time limit
 is a billable completion; failure of the service itself is uncharged.

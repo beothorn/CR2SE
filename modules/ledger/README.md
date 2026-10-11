@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 The ledger is one identity's durable record of credits and trust. Credits are
 issued by individual identities; they are not a global currency. There is no
 central ledger, consensus, guaranteed exchange rate, or forced reconciliation.

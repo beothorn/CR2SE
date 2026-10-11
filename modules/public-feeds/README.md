@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Publish signed public messages and let readers buy bounded pages of a feed.
 Each provider serves its own identity's feed. Readers verify and combine feeds
 locally. The wire identifier remains `cr2se.open-social-messaging`.
@@ -319,8 +322,8 @@ Ed25519 private-key seed:
 publisherPublicKey:
 d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a
 
-publisherId = SHA-256(publisherPublicKey):
-21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b9
+publisherId = SHA-256(0x01 || 0x01 || publisherPublicKey):
+c15712089820d9be130963d9c25b411f8801a3d62ab7d5f547437e21e6fbbedb
 
 messageId:
 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -333,17 +336,17 @@ attachments: empty array
 The resulting canonical message bytes are:
 
 ```text
-43523253452d4f50454e2d534f4349414c2d4d4553534147452d5631000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b900000000000000000000000000000002686900000000
+43523253452d4f50454e2d534f4349414c2d4d4553534147452d5631000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fc15712089820d9be130963d9c25b411f8801a3d62ab7d5f547437e21e6fbbedb00000000000000000000000000000002686900000000
 ```
 
 The expected hash and signature are:
 
 ```text
 messageHash:
-fd7b056e1dbd4bdccff4b85837f5402bb799baed173fd400981e3cdb78f97f67
+53f92cbe295e2b5ee4d3748868a70088f7d69b090e89483811badd30c43eab8a
 
 publisherSignature:
-94f96bae20e4f1109bb24648759bd22425b8630e1e31ec700a57e8fe1b0dc9744513439f1ec397d9a516afebe6a2f61ddca6acd4665d233657145d3ca553840d
+43e0c543653248e742ab29ff23c58a36e95af41487e459382551850a2f29733a911c9dc95c19a05b161c6b6b8f4527ef76ad6cfd135b7f34c6f9353dcba2e606
 ```
 
 An implementation whose canonical bytes, hash, or signature differ must not

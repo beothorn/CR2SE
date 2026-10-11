@@ -15,7 +15,8 @@ networks of LLMs without treating any of them as a special identity type.
 2. Use the [glossary](./Glossary.md) for shared terms.
 3. Read the [independent module contracts and minimum profile](./ModuleContracts.md).
 4. Follow the [PoC implementation guide](./PoC.md) in a separate project.
-5. Read each module's specification, inputs, outputs, pseudocode and diagrams.
+5. Read each module's specification, inputs, outputs, pseudocode, diagrams and
+   acceptance tests, starting with the [full acceptance test guide](./AcceptanceTests.md).
 6. Review [design decisions](./Decisions.md) for clarified rules and limits.
 
 This repository specifies a **draft version 1** protocol. It is not a working
@@ -25,8 +26,9 @@ enough to implement and test; the PoC must still validate them in practice.
 ## Modules
 
 Each module has a `README.md` specification, `inputs/` and `outputs/` contracts,
-`pseudocode/`, and `diagrams/`. A module is independently implementable against
-its contracts and declared dependencies. Implementations may compose modules
+`pseudocode/`, `diagrams/` and an `acceptanceTests/` suite. A module is
+independently implementable against its contracts and declared dependencies.
+Implementations may compose modules
 as a monolith, separate logical components, or separate processes. No particular
 package, class, database or programming language is prescribed.
 

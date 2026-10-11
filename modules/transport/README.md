@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 See [sequence and lifecycle diagrams](./diagrams/README.md). The
 [Peer Protocol](../peer-protocol/README.md) runs above these streams and defines
 the standard control messages and service-value encoding.

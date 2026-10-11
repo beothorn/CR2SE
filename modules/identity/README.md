@@ -12,6 +12,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 An identity has an Ed25519 key for signing and a separate persistent X25519
 key for decryption. Its ID comes from the Ed25519 public key. A person,
 organization, device, program, or network of agents may control an identity;

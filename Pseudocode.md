@@ -16,6 +16,10 @@ and are not a shared-memory requirement. Optional family pseudocode applies
 only when that capability is implemented; Services and Storage belong to the
 minimum useful profile.
 
+Each module's [`acceptanceTests/`](./AcceptanceTests.md) suite provides
+implementation-agnostic scenarios with explicit expected outcomes. They are
+acceptance specifications, not executable test code or new protocol rules.
+
 ## Modules
 
 - [Transport](./modules/transport/pseudocode/README.md) — TCP framing, connection authentication and

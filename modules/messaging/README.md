@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Place a signed message at a provider for one recipient. The recipient can
 discover and recover it later; the sender can check its status, extend retention,
 or remove a pending placement for agreed release credits. Encrypt private

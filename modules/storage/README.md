@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 Store exact bytes under a paid lease, then retrieve ranges, renew, remove, or
 check them using current provider terms. Private data should be encrypted by
 the requester before upload. Replication is a requester responsibility.

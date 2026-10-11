@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 A Board is an identity's service noticeboard. It lists what the identity
 provides, what it wants, and its payment terms. Full input, output, and check
 definitions are fetched separately.

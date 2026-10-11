@@ -13,6 +13,9 @@ Implement against the [input contract](./inputs/README.md) and
 This boundary supports a monolith, separate logical components or separate
 processes without changing the service or wire contract below.
 
+Use the [acceptance test pseudocode](./acceptanceTests/README.md) to guide
+implementation and check its observable results.
+
 This module binds Boards, service definitions, invocations, checks, and ledger
 control to Transport streams. Without a shared binding, matching service schemas
 would still produce incompatible clients. This specification is language-neutral.
