@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Discovery helps nodes find peers, shared files, and published trust records. Search results are clues to check, not proof that a peer is honest or that data is still available. Read the [short guide](./tldr.md).
+Discovery helps nodes find peers, shared files, and published trust records. Search results are clues to check, not proof that a peer is honest or that data is still available.
 
 ## Module boundary
 

@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Messaging lets nodes store and retrieve signed messages for recipients. Messages may be encrypted so only the recipient can read them. Read the [short guide](./tldr.md).
+Messaging lets nodes store and retrieve signed messages for recipients. Messages may be encrypted so only the recipient can read them.
 
 ## Module boundary
 

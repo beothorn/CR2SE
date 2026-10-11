@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Storage lets a node pay another node to keep bytes for a set time. Data can be retrieved, renewed, or removed under the agreed terms; applications decide whether to make extra copies. Read the [short guide](./tldr.md).
+Storage lets a node pay another node to keep bytes for a set time. Data can be retrieved, renewed, or removed under the agreed terms; applications decide whether to make extra copies.
 
 ## Module boundary
 

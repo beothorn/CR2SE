@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Peer Control defines the messages nodes use to request work, agree on a price, and return results. It sets rules for starting, finishing, and cancelling work; Transport carries the messages. Read the [short guide](./tldr.md).
+Peer Control defines the messages nodes use to request work, agree on a price, and return results. It sets rules for starting, finishing, and cancelling work; Transport carries the messages.
 
 ## Module boundary
 

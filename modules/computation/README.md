@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Computation lets a node offer limited program runs to peers. Requests set limits, and providers report results and usage for payment. Read the [short guide](./tldr.md).
+Computation lets a node offer limited program runs to peers. Requests set limits, and providers report results and usage for payment.
 
 ## Module boundary
 

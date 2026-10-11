@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Transport connects nodes and sends protected data between them. It checks the other node, protects messages, and carries several streams at once. Read the [short guide](./tldr.md).
+Transport connects nodes and sends protected data between them. It checks the other node, protects messages, and carries several streams at once.
 
 ## Module boundary
 

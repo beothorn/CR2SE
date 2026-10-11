@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Public File Sharing describes files as pieces with hashes and lets people download pieces from one or more hosts. Receivers check the pieces and finished file; shares are public. Read the [short guide](./tldr.md).
+Public File Sharing describes files as pieces with hashes and lets people download pieces from one or more hosts. Receivers check the pieces and finished file; shares are public.
 
 ## Module boundary
 

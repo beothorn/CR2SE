@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Cryptography defines how CR2SE signs, hashes, and encrypts data so implementations use the same bytes and keys. Follow the formats and test vectors exactly. Read the [short guide](./tldr.md).
+Cryptography defines how CR2SE signs, hashes, and encrypts data so implementations use the same bytes and keys. Follow the formats and test vectors exactly.
 
 ## Module boundary
 

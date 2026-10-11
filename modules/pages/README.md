@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Static Pages lets a node publish simple files such as web pages, images, and stylesheets. It returns content for a path without running server-side programs. Treat published content as untrusted. Read the [short guide](./tldr.md).
+Static Pages lets a node publish simple files such as web pages, images, and stylesheets. It returns content for a path without running server-side programs. Treat published content as untrusted.
 
 ## Module boundary
 

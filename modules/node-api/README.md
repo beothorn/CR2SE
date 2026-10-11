@@ -2,7 +2,7 @@
 
 ## TLDR
 
-The Node API is one local way for an application to ask its CR2SE node to connect to peers or use services. It checks the local caller and routes requests; a node can use another interface instead. Read the [short guide](./tldr.md).
+The Node API is one local way for an application to ask its CR2SE node to connect to peers or use services. It checks the local caller and routes requests; a node can use another interface instead.
 
 ## Module boundary
 

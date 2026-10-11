@@ -2,7 +2,7 @@
 
 ## TLDR
 
-The Ledger tracks credits, spending limits, reservations, and payments. Since each identity issues its own credits, balances are kept separate for each issuer. Read the [short guide](./tldr.md).
+The Ledger tracks credits, spending limits, reservations, and payments. Since each identity issues its own credits, balances are kept separate for each issuer.
 
 ## Module boundary
 
