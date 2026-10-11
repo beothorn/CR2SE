@@ -1,5 +1,9 @@
 # Identity
 
+## TLDR
+
+Identity gives a person, device, or program a stable ID made from its public signing key. It keeps signing and decryption keys separate and protected, and handles contacts and key recovery. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

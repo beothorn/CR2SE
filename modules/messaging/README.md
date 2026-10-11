@@ -1,5 +1,9 @@
 # Messaging
 
+## TLDR
+
+Messaging lets nodes store and retrieve signed messages for recipients. Messages may be encrypted so only the recipient can read them. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

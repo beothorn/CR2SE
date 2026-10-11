@@ -1,5 +1,9 @@
 # Public Feeds
 
+## TLDR
+
+Public Feeds lets publishers create signed updates that readers can fetch, including attachments. Readers can check who signed an update, but a valid signature does not prove it is safe or true. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

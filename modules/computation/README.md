@@ -1,5 +1,9 @@
 # Computation
 
+## TLDR
+
+Computation lets a node offer limited program runs to peers. Requests set limits, and providers report results and usage for payment. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

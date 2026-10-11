@@ -1,5 +1,9 @@
 # Board
 
+## TLDR
+
+A Board lists what a node offers or wants, including prices and basic terms. It helps peers choose work; detailed rules and the work itself live elsewhere. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

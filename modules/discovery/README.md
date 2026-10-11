@@ -1,5 +1,9 @@
 # Discovery
 
+## TLDR
+
+Discovery helps nodes find peers, shared files, and published trust records. Search results are clues to check, not proof that a peer is honest or that data is still available. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

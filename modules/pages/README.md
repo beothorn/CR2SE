@@ -1,5 +1,9 @@
 # Static Pages
 
+## TLDR
+
+Static Pages lets a node publish simple files such as web pages, images, and stylesheets. It returns content for a path without running server-side programs. Treat published content as untrusted. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Optional** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

@@ -1,5 +1,9 @@
 # Services
 
+## TLDR
+
+Services defines the shared steps for checking a request, agreeing on terms, doing work, and reporting a result. Each service module defines what its own work does. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).

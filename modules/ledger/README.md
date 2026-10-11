@@ -1,5 +1,9 @@
 # Ledger
 
+## TLDR
+
+The Ledger tracks credits, spending limits, reservations, and payments. Since each identity issues its own credits, balances are kept separate for each issuer. Read the [short guide](./tldr.md).
+
 ## Module boundary
 
 **Required** in the [minimum useful node profile](../../ModuleContracts.md#required-and-optional-capabilities).
