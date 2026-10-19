@@ -77,6 +77,7 @@ Connection:
     expectedRemoteId      32 bytes or NONE
     remoteId              32 bytes or NONE
     phase                 HANDSHAKE | ACTIVE | DRAINING | CLOSED
+    localAuthStarted      boolean, initially false
 
     sendKey               32 bytes or NONE
     receiveKey            32 bytes or NONE
@@ -341,6 +342,10 @@ function writeRawHandshakeFrame(connection, type, payload):
     header = encodeHeader(type, 0, length(payload))
 
     with connection.sendLock:
+        require not connection.localAuthStarted
+        if type == TYPE_AUTH:
+            // Even a partial AUTH write forbids a later raw error frame.
+            connection.localAuthStarted = true
         writeAll(connection.socket, header || payload)
 
 
@@ -363,7 +368,9 @@ function readRawHandshakeFrame(connection):
 ## 7. Complete connection handshake
 
 Both peers execute the same algorithm with different roles. Sending HELLO before
-waiting for the remote HELLO prevents deadlock.
+waiting for the remote HELLO, and AUTH before waiting for the remote AUTH,
+prevents deadlock. Keys and nonce prefixes initially are NONE. The outbound
+AUTH boundary is tracked independently of whether session keys exist.
 
 ```text
 function performHandshake(connection):
@@ -400,13 +407,6 @@ function performHandshake(connection):
 
         transcript = makeHelloTranscript(initiatorHello, acceptorHello)
 
-        session = deriveSessionMaterial(
-            connection.role,
-            localHello.ephemeralPrivateKey,
-            remoteHello.ephemeralPublicKey,
-            transcript
-        )
-
         localSignature = Ed25519.sign(
             connection.localIdentity.privateKey,
             makeAuthMessage(localRoleByte, transcript)
@@ -415,10 +415,7 @@ function performHandshake(connection):
         assert length(localSignature) == AUTH_SIZE
         writeRawHandshakeFrame(connection, TYPE_AUTH, localSignature)
 
-        // Every frame sent after this AUTH will use session.sendKey.
-        connection.sendKey = session.sendKey
-        connection.sendNoncePrefix = session.sendNoncePrefix
-        connection.nextSendSequence = 0
+        // No more raw writes; keys remain absent until peer AUTH verifies.
 
         secondIncoming = readRawHandshakeFrame(connection)
 
@@ -440,7 +437,17 @@ function performHandshake(connection):
         if not valid:
             raise AuthenticationFailure("invalid AUTH signature")
 
-        // Every frame received after this AUTH must have a valid tag.
+        session = deriveSessionMaterial(
+            connection.role,
+            localHello.ephemeralPrivateKey,
+            remoteHello.ephemeralPublicKey,
+            transcript
+        )
+
+        // Install both directions only after proof verification and derivation.
+        connection.sendKey = session.sendKey
+        connection.sendNoncePrefix = session.sendNoncePrefix
+        connection.nextSendSequence = 0
         connection.receiveKey = session.receiveKey
         connection.receiveNoncePrefix = session.receiveNoncePrefix
         connection.nextReceiveSequence = 0
@@ -454,7 +461,6 @@ function performHandshake(connection):
             connection.nextExpectedRemoteStreamId = 1
 
         connection.phase = ACTIVE
-        securelyErase(localHello.ephemeralPrivateKey)
         return connection.remoteId
 
     catch AuthenticationFailure as failure:
@@ -467,6 +473,9 @@ function performHandshake(connection):
     catch any transportOrProtocolFailure as failure:
         closeConnection(connection, failure)
         raise failure
+
+    finally:
+        securelyErase(localHello.ephemeralPrivateKey)
 ```
 
 The implementation starts its normal protected reader only after
@@ -603,6 +612,7 @@ function encodeErrorPayload(errorCode, reason):
     require errorCode != NO_ERROR
     require errorCode is a defined version 1 error code
     require length(reasonBytes) <= MAX_REASON_SIZE
+    require not startsWith(reasonBytes, hex("efbbbf"))
 
     return uint16_be(errorCode)
         || uint16_be(length(reasonBytes))
@@ -625,6 +635,8 @@ function parseErrorPayload(payload, allowNoError = false):
     reasonBytes = payload[4 .. end]
     if not UTF8.isValid(reasonBytes):
         raise MalformedPayload
+    if startsWith(reasonBytes, hex("efbbbf")):
+        raise MalformedPayload
 
     if errorCode == NO_ERROR and not allowNoError:
         raise MalformedPayload
@@ -640,6 +652,7 @@ function encodeGoAwayPayload(lastAcceptedRemoteStreamId, errorCode, reason):
 
     require errorCode is a defined version 1 error code, including NO_ERROR
     require length(reasonBytes) <= MAX_REASON_SIZE
+    require not startsWith(reasonBytes, hex("efbbbf"))
 
     return uint32_be(lastAcceptedRemoteStreamId)
         || uint16_be(errorCode)
@@ -1264,8 +1277,8 @@ function bestEffortConnectionError(connection, errorCode, reason = ""):
 
 
 function bestEffortAuthenticationErrorWhenSafe(connection, failure):
-    if connection.sendKey != NONE:
-        // Local AUTH was already written, so do not risk a framing-mode dispute.
+    if connection.localAuthStarted:
+        // No raw ERROR after AUTH begins, even when no keys were derived.
         return
 
     try:

@@ -29,6 +29,10 @@ a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf
 
 The standard X25519 operation performs its required scalar clamping internally.
 
+Shared-secret calculation (distinct from generating the local ephemeral key
+pair) and HKDF are performed only after peer AUTH verification. These fixed
+cryptographic outputs are unchanged by that ordering requirement.
+
 ## 2. Public keys and CR2SE IDs
 
 ```text
@@ -155,3 +159,23 @@ integrity tag:
 complete bytes written to TCP:
 01040000000000000000000800010203040506075feb9216750a6618af80f39b7f813ea6
 ```
+
+## 7. Diagnostic reason vectors
+
+`diagnosticReasons` below uses `PROTOCOL_ERROR` (`0001`) for ERROR, CANCEL and
+GOAWAY. All entries are payloads without frame headers or tags. GOAWAY has
+`lastAcceptedRemoteStreamId = 0`. The reason column is the exact UTF-8 input to
+the encoder and the exact bytes to preserve on successful decoding.
+
+| Reason bytes | ERROR / CANCEL payload | GOAWAY payload | Result |
+|---|---|---|---|
+| empty | `00010000` | `0000000000010000` | accept |
+| `efbbbf` | `00010003efbbbf` | `0000000000010003efbbbf` | reject leading BOM |
+| `efbbbf61` | `00010004efbbbf61` | `0000000000010004efbbbf61` | reject leading BOM before text |
+| `61efbbbf62` | `0001000561efbbbf62` | `000000000001000561efbbbf62` | accept interior U+FEFF |
+| `65cc81` | `0001000365cc81` | `000000000001000365cc81` | accept decomposed text unchanged |
+
+For a byte-limit boundary case, use `61` repeated 1021 times followed by
+`efbbbf`: the 1024-byte reason is accepted with length `0400`. Using 1022
+copies instead yields 1025 bytes and must be rejected, even though U+FEFF is
+interior. These rules apply to outgoing codecs as well as incoming parsers.

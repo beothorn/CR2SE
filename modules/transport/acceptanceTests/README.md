@@ -16,6 +16,11 @@ TEST TR-01 exact handshake and first frame
   ASSERT exact transcript, signatures, keys, nonce prefixes and first tag = V
   ASSERT authenticated connection event carries exact local/peer IDs
   ASSERT no application event before peer AUTH verifies
+  FOR EACH role IN [initiator, acceptor]:
+    ASSERT trace order: write local AUTH completely, verify peer AUTH successfully,
+           calculate X25519 shared secret, HKDF extract/expand, install both directions,
+           emit authenticated connection
+    ASSERT first protected send/receive sequence = 0
 
 TEST TR-02 partial and coalesced I/O
   FOR EACH split position in fixture header/payload/tag and one-byte segmentation:
@@ -40,12 +45,28 @@ TEST TR-04 handshake failure matrix
     ACT handshake fixture; ASSERT connection rejected; no authenticated application data
   ACT reverse arrival order of valid HELLOs
   ASSERT transcript remains TCP-role ordered
+  FOR EACH role IN [initiator, acceptor]:
+    ACT valid HELLO then invalid AUTH signature with strict crypto call recording
+    ASSERT no shared-secret X25519 or HKDF call; no installed keys/prefixes
+    ASSERT TCP closes without response after local AUTH; no authenticated event
+    ACT HELLO with all-zero ephemeral public key and invalid AUTH signature
+    ASSERT signature failure takes precedence; shared-secret X25519 never called
+    ACT same HELLO with a valid signature over its actual transcript
+    ASSERT verify succeeds before X25519 returns zero; no HKDF or installed material
+    ASSERT TCP closes without response; no authenticated event
+  ASSERT expected-ID rejection also makes no shared-secret X25519 or HKDF call
 
 TEST TR-05 per-direction tag transition
   ACT receive AUTH and first tagged frame together after local handshake prerequisites
   ASSERT AUTH itself untagged; immediately following frame verified with sequence0
   ACT send non-handshake frame before verifying remote AUTH
   ASSERT forbidden even if local AUTH already sent
+  ACT withhold peer AUTH after receiving valid HELLO
+  ASSERT local AUTH is sent untagged without waiting; keys/prefixes still absent
+  ACT expire handshake deadline
+  ASSERT close without further bytes or authenticated event
+  ACT socket accepts a prefix of local AUTH then fails
+  ASSERT close without raw ERROR or subsequent frame; no key derivation
   ACT same-identity handshake with independent fresh ephemeral material
   ASSERT accepted; directional roles remain distinct
 
@@ -58,6 +79,9 @@ TEST TR-06 integrity, replay and secret lifecycle
   ACT would wrap directional uint64 sequence
   ASSERT closes before wrap; no nonce reuse
   ACT close connection; ASSERT session/ephemeral secret handles released
+  FOR EACH handshake exit IN [success, invalid signature, zero shared secret,
+                              expected-ID mismatch, I/O failure, timeout]:
+    ASSERT local ephemeral private key released
 
 TEST TR-07 exact stream allocation
   ACT initiator opens3 streams; acceptor opens3 streams
@@ -114,6 +138,16 @@ TEST TR-13 errors and diagnostics
             invalid UTF8 reason, trailing control bytes]:
     ACT receive malformed payload; ASSERT connection error
   ASSERT diagnostic text never drives machine state or contains local secrets
+  FOR EACH type IN [ERROR, CANCEL, GOAWAY]:
+    FOR EACH rejected row IN V.diagnosticReasons:
+      ACT parse row payload for type; ASSERT malformed payload
+      ACT receive on an applicable active connection/stream with valid tag
+      ASSERT connection error; diagnostic not delivered as valid
+      ACT encode row reason for type; ASSERT rejection before payload/wire emission
+    FOR EACH accepted row IN V.diagnosticReasons:
+      ACT encode then parse reason for type
+      ASSERT payload exactly equals vector; reason bytes unchanged
+  ASSERT byte length includes interior U+FEFF; no normalization or BOM stripping
 
 TEST TR-14 truncation and failed connection
   FOR EACH prefix ending within any header/payload/tag:

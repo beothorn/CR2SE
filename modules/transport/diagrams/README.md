@@ -11,7 +11,10 @@ sequenceDiagram
     A->>I: HELLO with public key, ephemeral key, nonce
     I->>A: AUTH signature over role and both HELLOs
     A->>I: AUTH signature over role and both HELLOs
-    Note over I,A: Verify signatures and derive directional keys and counters
+    Note over I,A: Each sends AUTH before waiting for the peer AUTH; no session keys yet
+    Note over I,A: Verify peer AUTH first; failure closes without response or derivation
+    Note over I,A: Only then calculate X25519, reject zero, and run HKDF
+    Note over I,A: Install both directions with counters zero; erase ephemeral secrets
     I->>A: Tagged OPEN stream 1 for cr2se.peer version 1
     I->>A: Tagged DATA records
     A->>I: Tagged DATA records
@@ -33,3 +36,17 @@ stateDiagram-v2
     Closed --> [*]
     Aborted --> [*]
 ```
+
+```mermaid
+flowchart TD
+    Input[ERROR / CANCEL / GOAWAY reason bytes] --> UTF8{Valid UTF-8?}
+    UTF8 -->|No| Reject[Reject diagnostic]
+    UTF8 -->|Yes| BOM{Starts with EF BB BF?}
+    BOM -->|Yes| Reject
+    BOM -->|No| Rest[Check byte length, code and payload shape]
+    Rest --> Valid[Preserve accepted bytes including interior U+FEFF]
+```
+
+The same leading-BOM restriction applies when encoding local diagnostic text.
+Incoming malformed diagnostics cause a connection error; outgoing invalid
+reasons are rejected before encoding.

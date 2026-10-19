@@ -24,6 +24,18 @@ Queue saturation propagates backpressure or the specified resource failure,
 not unbounded memory use. Closing erases session secrets; handles and counters
 are not reused across connection instances, including after process restart.
 
+An invalid peer AUTH produces no X25519 shared-secret or HKDF calls, installed
+session material, or authenticated connection event. Successful verification
+and derivation install both directions with sequence counters at zero. If
+handshake failure occurs after local AUTH begins, close without a response;
+the outbound framing boundary does not depend on key availability. Release
+the ephemeral private key on success, failure and timeout.
+
+Diagnostic codecs reject leading BOMs for ERROR, CANCEL and GOAWAY in both
+directions. Accepted text, including interior U+FEFF and empty reasons, retains
+its exact UTF-8 bytes. Rejected outgoing reasons produce no encoded payload;
+malformed incoming diagnostics cause a connection error.
+
 ## Independent acceptance examples
 
 - Run the existing handshake/frame vectors through fragmented and coalesced

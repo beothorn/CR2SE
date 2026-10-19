@@ -23,3 +23,10 @@ Board, Ledger, Node API or Discovery process is required.
 Transport owns sockets, stream counters and session secrets. Inject monotonic
 timers and bounded queues through platform ports. Identity IDs in application
 payloads cannot substitute for the authenticated connection identity.
+
+Request X25519 shared-secret calculation and HKDF only after the peer AUTH
+signature verifies; ephemeral key generation still precedes HELLO. Send local
+AUTH before waiting for the peer proof. Reject outgoing ERROR/CANCEL/GOAWAY
+reasons beginning with U+FEFF, exceeding 1024 UTF-8 bytes, or containing invalid
+text. Incoming diagnostic bytes require valid UTF-8 and must not start with
+`EF BB BF`; do not strip a BOM or normalize text to make an input acceptable.

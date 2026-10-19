@@ -76,7 +76,10 @@ All multi-byte integers are unsigned and encoded in network byte order
 
 Lengths always count bytes, not characters. Unless a field says otherwise,
 text is valid UTF-8 without a byte-order mark. A receiver must reject invalid
-UTF-8 in a field declared as text. Diagnostic text is not protocol state and
+UTF-8 or a leading byte-order mark (`EF BB BF`) in a field declared as text.
+Senders must also reject a leading BOM. Interior U+FEFF is permitted; valid
+text must be preserved without normalization or BOM stripping.
+Diagnostic text is not protocol state and
 must not be parsed to determine behavior.
 
 ---
@@ -245,6 +248,20 @@ connection `ERROR` until it has received and verified the peer's `AUTH`.
 After the peer's `AUTH` verifies, each node calculates the X25519 shared secret
 using its ephemeral private key and the peer's ephemeral public key. It must
 reject an all-zero shared secret.
+
+X25519 shared-secret calculation and HKDF must not run before successful peer
+AUTH verification. Both directional keys and nonce prefixes are installed only
+after derivation succeeds. Local AUTH must still be sent before waiting for
+peer AUTH; sending it does not imply that session keys exist. An invalid AUTH
+therefore fails before any shared-secret calculation, even if the peer's
+ephemeral key would also yield an all-zero result.
+
+Track the outbound AUTH boundary separately from key availability. After local
+AUTH begins, no untagged ERROR may be sent, including after a partial write.
+If authentication or derivation then fails, close TCP without a response.
+Erase the local ephemeral private key on every handshake exit, including
+failure and timeout. No authenticated connection is exposed until verification
+and derivation both succeed.
 
 Define:
 
@@ -447,7 +464,8 @@ uint16_be(reasonLength)
 reason                           reasonLength UTF-8 bytes
 ```
 
-`reasonLength` is `0..1024`, and there must be no trailing bytes.
+`reasonLength` is `0..1024`, and there must be no trailing bytes. The reason
+obeys the diagnostic text rules in section 11, including the leading-BOM ban.
 `lastAcceptedRemoteStreamId` is the greatest stream ID opened by the receiver
 of `GOAWAY` that the sender accepted, or zero if none.
 
@@ -479,6 +497,9 @@ reason                           reasonLength UTF-8 bytes
 `reasonLength` is `0..1024`; no trailing bytes are permitted. The reason is
 optional diagnostic text and must not contain secrets or be used as a
 machine-readable decision value.
+For ERROR, CANCEL and GOAWAY, both encoding and parsing must reject a reason
+beginning with `EF BB BF`. Empty reasons and interior U+FEFF are valid; preserve
+their exact UTF-8 bytes without normalization.
 
 Version 1 codes are:
 
