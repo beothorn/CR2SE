@@ -209,13 +209,9 @@ function validateEncryptionPublicCredential(credential):
     if derivedId != credential.identityId:
         raise IdentityMismatch
 
-    verificationKey = Ed25519.parsePublicKey(credential.ed25519PublicKey)
-    if verificationKey is ERROR:
-        raise InvalidEd25519PublicKey
-
     message = makeEncryptionBindingBytes(credential.x25519PublicKey)
-    if not Ed25519.verify(
-        verificationKey,
+    if not verifyExactBytes(
+        credential.ed25519PublicKey,
         message,
         credential.bindingSignature
     ):
@@ -244,17 +240,38 @@ function signExactBytes(ed25519PrivateKeyHandle, protocolDefinedBytes):
     return Ed25519.sign(ed25519PrivateKeyHandle, protocolDefinedBytes)
 
 
-function verifyExactBytes(ed25519PublicKey, protocolDefinedBytes, signature):
-    requireExactLength(
-        ed25519PublicKey, ED25519_PUBLIC_KEY_SIZE, "Ed25519 public key")
-    requireExactLength(
-        signature, ED25519_SIGNATURE_SIZE, "Ed25519 signature")
+function parseVerificationPublicKey(encoded):
+    // Canonical decoding includes y < p and rejecting x=0 with sign bit 1.
+    if length(encoded) != 32:
+        return ERROR
+    point = Edwards25519.decodeCanonical(encoded)
+    if point is ERROR or Edwards25519.encode(point) != encoded:
+        return ERROR
+    if multiply(8, point) == Edwards25519.identity:
+        return ERROR
+    return point
 
-    key = Ed25519.parsePublicKey(ed25519PublicKey)
-    if key is ERROR:
+
+function verifyExactBytes(ed25519PublicKey, protocolDefinedBytes, signature):
+    if length(ed25519PublicKey) != 32 or length(signature) != 64:
         return false
-    return Ed25519.verify(key, protocolDefinedBytes, signature)
+    A = parseVerificationPublicKey(ed25519PublicKey)
+    Rbytes = signature[0 .. 31]
+    R = parseVerificationPublicKey(Rbytes)  // Same point rules for R.
+    S = unsignedLittleEndianInteger(signature[32 .. 63])
+    if A is ERROR or R is ERROR or S >= ED25519_GROUP_ORDER_L:
+        return false
+    k = unsignedLittleEndianInteger(
+        SHA512(Rbytes || ed25519PublicKey || protocolDefinedBytes)
+    ) mod ED25519_GROUP_ORDER_L
+    return multiply(S, ED25519_BASE_POINT) == add(R, multiply(k, A))
 ```
+
+The helpers express the [mandatory verification profile](../README.md#ed25519-verification-profile).
+`ED25519_GROUP_ORDER_L` and `ED25519_BASE_POINT` have the values defined there.
+Use an established cryptographic implementation with these exact checks; the
+arithmetic above specifies acceptance, not a request to implement curve math.
+Malformed inputs and decoder failures return false at the verification boundary.
 
 The calling operation defines the exact bytes and domain separation. These
 helpers do not invent a generic signing serialization or challenge protocol.

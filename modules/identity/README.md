@@ -125,3 +125,7 @@ bootstrap endpoints, lease IDs, expirations, content hashes, encryption formats,
 and application metadata needed to reconstruct data. Storage does not enumerate
 a user's leases. Back up this catalog independently; do not put its only
 location inside data that cannot be found without it.
+
+Received signing keys and identity proofs must satisfy the
+[Cryptography Ed25519 profile](../cryptography/README.md#ed25519-verification-profile).
+A correctly derived ID does not exempt a weak or noncanonical key from rejection.

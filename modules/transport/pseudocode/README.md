@@ -428,7 +428,7 @@ function performHandshake(connection):
         if length(secondIncoming.payload) != AUTH_SIZE:
             raise AuthenticationFailure("invalid AUTH length")
 
-        valid = Ed25519.verify(
+        valid = Cryptography.verifyExactBytes(
             remoteHello.ed25519PublicKey,
             makeAuthMessage(remoteRoleByte, transcript),
             secondIncoming.payload

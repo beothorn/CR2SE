@@ -154,8 +154,8 @@ identifiers.
 
 `deriveVersion1Id` defines the deterministic identifier calculation. When a
 received public key will also be used for signature verification, the
-cryptographic library must parse and validate it according to that library's
-Ed25519 rules.
+implementation must apply the [CR2SE Ed25519 verification profile](../../cryptography/README.md#ed25519-verification-profile),
+including canonical decoding and small-order rejection.
 
 ---
 
@@ -171,7 +171,7 @@ function validatePublicIdentity(version, keyAlgorithm, publicKey, claimedId):
     if derivedId != claimedId:
         raise IdentityMismatch
 
-    verificationKey = Ed25519.parsePublicKey(publicKey)
+    verificationKey = Cryptography.parseVerificationPublicKey(publicKey)
     if verificationKey is ERROR:
         raise InvalidPublicKey
 
@@ -338,7 +338,7 @@ function verifyProtocolProof(
         claimedId
     )
 
-    if not Ed25519.verify(
+    if not Cryptography.verifyExactBytes(
         publicIdentity.publicKey,
         protocolDefinedMessage,
         signature

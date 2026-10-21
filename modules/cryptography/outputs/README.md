@@ -27,3 +27,8 @@ Keep primitive private handles scoped to their purpose and authorized caller.
 - Change one header byte or tag: decryption fails and emits no plaintext.
 - Reject wrong key lengths, unsupported algorithms, all-zero X25519 results and
   overflowing lengths before allocation; no other module needs to be running.
+
+All public-key validation and signature verification follows the
+[Ed25519 verification profile](../README.md#ed25519-verification-profile),
+including canonical point encoding, small-order rejection, scalar bounds and
+identical acceptance for single and batch verification.

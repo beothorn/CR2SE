@@ -50,7 +50,7 @@ function validateSignedMessage(m, publisherId, terms):
     require length(canonical) <= terms.maximumMessageBytes
     messageHash = SHA256(canonical)
     require m.messageHash == messageHash
-    require Ed25519.verify(m.publisherPublicKey,
+    require Cryptography.verifyExactBytes(m.publisherPublicKey,
         ASCII("CR2SE-OPEN-SOCIAL-SIGNATURE-V1") || messageHash,
         m.publisherSignature)
     return m

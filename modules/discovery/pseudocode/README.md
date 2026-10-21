@@ -36,7 +36,7 @@ function validateCommonRecord(encoded, terms, now):
             <= terms.maximumRecordLifetimeSeconds
     validate type-specific fields and canonical ordering
     canonicalWithoutSignature = encodeSigningFieldsExactly(record)
-    require Ed25519.verify(record.publicKey, canonicalWithoutSignature,
+    require Cryptography.verifyExactBytes(record.publicKey, canonicalWithoutSignature,
                            record.signature)
     require encodeRecordExactly(record) == encoded
     return record with recordId=SHA256(canonicalWithoutSignature)

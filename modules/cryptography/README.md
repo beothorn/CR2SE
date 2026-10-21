@@ -50,6 +50,44 @@ Reject an invalid X25519 operation and reject an all-zero shared result even if
 the underlying library does not report it. Do not use the raw shared result as
 an encryption key. Derive a key with the operation's exact HKDF salt and info.
 
+## Ed25519 verification profile
+
+Every CR2SE signature consumer must use this profile, including Transport AUTH,
+identity proofs, encryption-key bindings, Discovery, Messaging, Ledger, and
+public content. Ordinary Ed25519 specifies the signed message operation; it
+does not permit a backend's default acceptance policy to override these rules.
+
+1. Require a 32-byte public key A and a 64-byte signature R || S.
+2. Decode A and R using canonical compressed Edwards25519 encoding: the low
+   255 bits encode y with `0 <= y < p`, `p = 2^255 - 19`; the top bit is the
+   parity of x. Reject points not on the curve, encodings with no square root,
+   and x = 0 with the sign bit set. Re-encoding must reproduce the input bytes.
+3. Reject A or R of small order, defined by `[8]P = identity`, including the
+   identity point itself. This is not a requirement that `[L]P = identity`:
+   mixed-order points are governed by the exact equation below.
+4. Interpret S as an unsigned little-endian integer and require `S < L`, where
+   `L = 2^252 + 27742317777372353535851937790883648493`. Do not reduce S.
+5. Compute `k = littleEndianInteger(SHA-512(R || A || message)) mod L` using
+   the received canonical encodings and exact protocol message bytes. Accept
+   only if `[S]B = R + [k]A`, where B is the Ed25519 base point. Do not multiply
+   the equation by the cofactor or use Ed25519ph/Ed25519ctx.
+
+These rules select canonical decoding and the uncofactored verification option
+from [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032.html#section-5.1.7), with
+explicit small-order rejection. They apply to individual signatures and batches
+identically: a batch may be accepted only when every member passes this profile.
+A batch API with different acceptance semantics is not a substitute; use
+individual verification if equivalence cannot be ensured. Public identity
+validation applies the same decoding and small-order checks to A even before
+signature verification; calculating an ID alone remains a byte-hashing operation.
+
+This tightens acceptance of weak or noncanonical inputs previously left to
+library defaults. Wire formats, honestly generated keys/signatures and existing
+valid vectors are unchanged. Implementations using permissive defaults must
+update every consumer; a method named `strict` is sufficient only if it enforces
+all rules above. Existing records that fail this profile must not remain trusted
+merely because an older verifier accepted them.
+
 ## Persistent encryption credential
 
 An identity publishes its Ed25519 public key, persistent X25519 public key, and

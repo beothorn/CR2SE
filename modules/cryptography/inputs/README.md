@@ -29,3 +29,8 @@ access and established algorithm implementations. No network, Board, trust,
 Ledger or paid Storage access is required. Bound object sizes and overflow-check
 lengths before allocation. Test-only deterministic randomness must be explicitly
 injected and isolated from ordinary key generation.
+
+All public-key validation and signature verification follows the
+[Ed25519 verification profile](../README.md#ed25519-verification-profile),
+including canonical point encoding, small-order rejection, scalar bounds and
+identical acceptance for single and batch verification.

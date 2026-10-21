@@ -20,6 +20,12 @@ TEST CR-02 exact ordinary Ed25519
   FOR EACH [message bit flip, signature bit flip, wrong public key, wrong domain]:
     ACT verify(mutated fixture); ASSERT false
   ASSERT Ed25519ph or native object serialization is not used
+  FOR EACH row IN the negative signature vectors below:
+    ACT verify(row.A, row.message, row.signature); ASSERT false
+    ACT verify batch containing row and valid Transport AUTH vector; ASSERT rejected
+    ACT verify each individually; ASSERT same per-signature decisions
+  ASSERT valid existing binding and AUTH vectors still pass
+  ASSERT verification uses the uncofactored equation and canonical encodings
 
 TEST CR-03 persistent key binding
   ACT bind/verify independently generated persistent X25519 public key
@@ -99,3 +105,36 @@ TEST CR-11 independent protected units
   ASSERT reordered/missing chunk fails that manifest's verification
   ASSERT no new CR2SE chunk wire format is inferred from this application test
 ```
+
+## Negative Ed25519 vectors
+
+Hex strings below encode exact bytes. `||` is concatenation; `zero(n)` is n
+zero bytes. `V.A`, `V.R`, `V.S`, and `V.message` are the public key, first and
+last 32 signature bytes, and message from the pinned valid Transport AUTH vector.
+Every row must be rejected. Use both ASCII("first") and ASCII("different") for
+rows marked `either`; the identity-point forgery fails for every message.
+
+```text
+I = hex("0100000000000000000000000000000000000000000000000000000000000000")
+T = hex("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f")
+Yp = hex("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f")
+IbadSign = hex("0100000000000000000000000000000000000000000000000000000000000080")
+Lbytes = hex("edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010")
+
+A           signature                   message       reason
+I           I || zero(32)               either        small-order A and R
+T           V.R || V.S                  V.message     order-two A
+V.A         I || V.S                    V.message     small-order R
+V.A         T || V.S                    V.message     order-two R
+Yp          V.R || V.S                  V.message     noncanonical y = p
+V.A         Yp || V.S                   V.message     noncanonical R
+IbadSign    V.R || V.S                  V.message     x = 0 with sign bit 1
+V.A         IbadSign || V.S             V.message     invalid R sign bit
+V.A         V.R || Lbytes               V.message     S = L, out of range
+V.A         V.R || littleEndian32(V.S + L) V.message  scalar malleability
+```
+
+In the final row interpret V.S as an unsigned little-endian integer before
+addition. For each invalid A, public identity validation must also reject even
+when the claimed ID is correctly derived from those bytes. No normalization or
+scalar reduction may turn a rejected row into accepted input.

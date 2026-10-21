@@ -55,6 +55,14 @@ TEST TR-04 handshake failure matrix
     ASSERT verify succeeds before X25519 returns zero; no HKDF or installed material
     ASSERT TCP closes without response; no authenticated event
   ASSERT expected-ID rejection also makes no shared-secret X25519 or HKDF call
+  FOR EACH role IN [initiator, acceptor]:
+    ACT peer HELLO with Ed25519 key I from Cryptography negative vectors,
+        correctly derived claimed ID and otherwise valid fields;
+        peer AUTH = I || zero(32)
+    ASSERT rejected before authenticated event or X25519/HKDF derivation
+    ASSERT no application data accepted
+    ACT valid HELLO with AUTH R replaced by I, then with S replaced by Lbytes
+    ASSERT each rejected; no authenticated event or session keys
 
 TEST TR-05 per-direction tag transition
   ACT receive AUTH and first tagged frame together after local handshake prerequisites
@@ -165,3 +173,6 @@ TEST TR-15 bounded consumers and timeouts
   ASSERT no unbounded allocation; whole-frame writes remain serialized
   ASSERT resource refusal cannot be reported as normal service completion
 ```
+
+Weak-point and scalar fixtures are defined in the
+[Cryptography negative vectors](../../cryptography/acceptanceTests/README.md#negative-ed25519-vectors).

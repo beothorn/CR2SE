@@ -34,7 +34,7 @@ function validateMessage(m, authenticatedSender, maximumPayloadBytes):
     require 1 <= m.payloadSize <= maximumPayloadBytes
     require length(m.payload) == m.payloadSize
     require SHA256(m.payload) == m.payloadHash
-    require Ed25519.verify(m.senderPublicKey, messageSigningBytes(m),
+    require Cryptography.verifyExactBytes(m.senderPublicKey, messageSigningBytes(m),
                            m.senderSignature)
 ```
 
