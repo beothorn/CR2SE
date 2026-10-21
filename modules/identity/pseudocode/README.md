@@ -62,39 +62,35 @@ function makeEncryptionKeyBindingBytes(x25519PublicKey):
 
 
 function generateIdentity(secureKeyStore):
-    signingKeyPair = Ed25519.generateKeyPair(CSPRNG)
-    encryptionKeyPair = X25519.generateKeyPair(CSPRNG)
-
-    publicKey = Ed25519.canonicalPublicKeyBytes(signingKeyPair.publicKey)
-    if length(publicKey) != PUBLIC_KEY_SIZE:
-        securelyErase(signingKeyPair.privateKey)
-        securelyErase(encryptionKeyPair.privateKey)
-        raise InternalError("unexpected Ed25519 public-key size")
-
-    encryptionPublicKey = X25519.canonicalPublicKeyBytes(
-        encryptionKeyPair.publicKey)
-    if length(encryptionPublicKey) != X25519_PUBLIC_KEY_SIZE:
-        securelyErase(signingKeyPair.privateKey)
-        securelyErase(encryptionKeyPair.privateKey)
-        raise InternalError("unexpected X25519 public-key size")
-
-    id = deriveVersion1Id(publicKey)
-    binding = Ed25519.sign(
-        signingKeyPair.privateKey,
-        makeEncryptionKeyBindingBytes(encryptionPublicKey)
-    )
-    assert length(binding) == ED25519_SIGNATURE_SIZE
-
-    // The key store chooses its protected local representation. It must not
-    // alter either key pair visible to other CR2SE implementations.
     try:
+        signingKeyPair = Ed25519.generateKeyPair(CSPRNG)
+        encryptionKeyPair = X25519.generateKeyPair(CSPRNG)
+
+        publicKey = Ed25519.canonicalPublicKeyBytes(signingKeyPair.publicKey)
+        if length(publicKey) != PUBLIC_KEY_SIZE:
+            raise InternalError("unexpected Ed25519 public-key size")
+
+        encryptionPublicKey = X25519.canonicalPublicKeyBytes(
+            encryptionKeyPair.publicKey)
+        if length(encryptionPublicKey) != X25519_PUBLIC_KEY_SIZE:
+            raise InternalError("unexpected X25519 public-key size")
+
+        id = deriveVersion1Id(publicKey)
+        binding = Ed25519.sign(
+            signingKeyPair.privateKey,
+            makeEncryptionKeyBindingBytes(encryptionPublicKey)
+        )
+        assert length(binding) == ED25519_SIGNATURE_SIZE
+
+        // The key store chooses its protected local representation. It must not
+        // alter either key pair visible to other CR2SE implementations.
         handles = secureKeyStore.storeIdentityKeyPairsAtomically(
             signingKeyPair.privateKey,
             encryptionKeyPair.privateKey
         )
     finally:
-        securelyEraseTemporaryCopies(signingKeyPair.privateKey)
-        securelyEraseTemporaryCopies(encryptionKeyPair.privateKey)
+        securelyEraseTemporaryCopies(signingKeyPair.privateKey if assigned)
+        securelyEraseTemporaryCopies(encryptionKeyPair.privateKey if assigned)
 
     if handles is ERROR:
         raise IdentityStorageFailure
@@ -115,7 +111,8 @@ function generateIdentity(secureKeyStore):
 
 Generation is local and requires no registration, network connection,
 certificate authority, or uniqueness lookup. `CSPRNG` and the Ed25519 library
-must provide cryptographically secure key generation.
+must provide cryptographically secure key generation. Secret acquisition and
+cleanup follow the [Cryptography ownership rules](../../cryptography/pseudocode/README.md).
 
 Failure to store both private keys successfully fails identity creation. An
 implementation must not report a durable identity while retaining either only

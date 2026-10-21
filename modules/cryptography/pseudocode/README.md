@@ -11,6 +11,15 @@ X25519, SHA-256, HKDF-SHA-256, and XChaCha20-Poly1305. Received keys,
 signatures, headers, lengths, ciphertext, authenticated data, and decrypted
 plaintext are untrusted input.
 
+Every secret-producing call executes inside an already active cleanup guard.
+`if assigned` means erase only an acquired secret, never an unassigned value or
+error sentinel. Erasure is non-throwing and covers temporary copies; primitives
+must erase internal partial results if they fail before returning. Returning a
+secret transfers ownership to the caller without an unguarded interval. Scoped
+secret owners with equivalent failure and cancellation behavior are acceptable.
+Successful atomic key storage retains protected persistent copies; failure
+retains neither pair. Erasing staging copies does not erase committed handles.
+
 ---
 
 ## 1. Constants and data structures
@@ -135,28 +144,28 @@ function bindEncryptionPublicKey(ed25519PrivateKeyHandle, x25519PublicKey):
 
 
 function generateCompleteIdentityKeyMaterial(secureKeyStore):
-    signingPair = Ed25519.generateKeyPair(CSPRNG)
-    encryptionPair = X25519.generateKeyPair(CSPRNG)
-
-    edPublic = Ed25519.canonicalPublicKeyBytes(signingPair.publicKey)
-    xPublic = X25519.canonicalPublicKeyBytes(encryptionPair.publicKey)
-    requireExactLength(edPublic, ED25519_PUBLIC_KEY_SIZE, "Ed25519 public key")
-    requireExactLength(xPublic, X25519_PUBLIC_KEY_SIZE, "X25519 public key")
-
-    identityId = Identity.deriveVersion1Id(edPublic)
-    binding = Ed25519.sign(
-        signingPair.privateKey,
-        makeEncryptionBindingBytes(xPublic)
-    )
-
     try:
+        signingPair = Ed25519.generateKeyPair(CSPRNG)
+        encryptionPair = X25519.generateKeyPair(CSPRNG)
+
+        edPublic = Ed25519.canonicalPublicKeyBytes(signingPair.publicKey)
+        xPublic = X25519.canonicalPublicKeyBytes(encryptionPair.publicKey)
+        requireExactLength(edPublic, ED25519_PUBLIC_KEY_SIZE, "Ed25519 public key")
+        requireExactLength(xPublic, X25519_PUBLIC_KEY_SIZE, "X25519 public key")
+
+        identityId = Identity.deriveVersion1Id(edPublic)
+        binding = Ed25519.sign(
+            signingPair.privateKey,
+            makeEncryptionBindingBytes(xPublic)
+        )
+
         handles = secureKeyStore.storeIdentityKeyPairsAtomically(
             signingPair.privateKey,
             encryptionPair.privateKey
         )
     finally:
-        securelyEraseTemporaryCopies(signingPair.privateKey)
-        securelyEraseTemporaryCopies(encryptionPair.privateKey)
+        securelyEraseTemporaryCopies(signingPair.privateKey if assigned)
+        securelyEraseTemporaryCopies(encryptionPair.privateKey if assigned)
 
     if handles is ERROR:
         raise IdentityStorageFailure
@@ -264,24 +273,24 @@ function safeX25519(privateKeyHandleOrBytes, remotePublicKey):
         "remote X25519 public key"
     )
 
-    shared = X25519(privateKeyHandleOrBytes, remotePublicKey)
-    if shared is ERROR:
-        raise InvalidKeyAgreement
+    transferred = false
+    try:
+        shared = X25519(privateKeyHandleOrBytes, remotePublicKey)
+        if shared is ERROR:
+            raise InvalidKeyAgreement
+        requireExactLength(shared, X25519_SHARED_SECRET_SIZE, "X25519 shared result")
 
-    requireExactLength(
-        shared,
-        X25519_SHARED_SECRET_SIZE,
-        "X25519 shared result"
-    )
+        accumulator = 0
+        for each byte in shared:
+            accumulator = accumulator OR byte
+        if accumulator == 0:
+            raise InvalidKeyAgreement("all-zero X25519 shared result")
 
-    accumulator = 0
-    for each byte in shared:
-        accumulator = accumulator OR byte
-    if accumulator == 0:
-        securelyErase(shared)
-        raise InvalidKeyAgreement("all-zero X25519 shared result")
-
-    return shared
+        transferred = true
+        return shared  // Ownership moves to the caller's active cleanup guard.
+    finally:
+        if not transferred:
+            securelyEraseTemporaryCopies(shared if assigned)
 ```
 
 The all-zero test is mandatory even if the cryptographic library reports no
@@ -330,13 +339,18 @@ function deriveIdentityEncryptionKey(sharedSecret, kdfContext):
     requireExactLength(kdfContext, 124, "identity-encryption KDF context")
 
     salt = SHA256(KDF_SALT_PREFIX || byte(0x00) || kdfContext)
-    prk = HKDF_SHA256.extract(salt, sharedSecret)
-    info = KDF_INFO_PREFIX || byte(0x00) || kdfContext
-    key = HKDF_SHA256.expand(prk, info, ENCRYPTION_KEY_SIZE)
-
-    securelyErase(prk)
-    assert length(key) == ENCRYPTION_KEY_SIZE
-    return key
+    transferred = false
+    try:
+        prk = HKDF_SHA256.extract(salt, sharedSecret)
+        info = KDF_INFO_PREFIX || byte(0x00) || kdfContext
+        key = HKDF_SHA256.expand(prk, info, ENCRYPTION_KEY_SIZE)
+        requireExactLength(key, ENCRYPTION_KEY_SIZE, "derived key")
+        transferred = true
+        return key  // Ownership moves to the caller's active cleanup guard.
+    finally:
+        securelyEraseTemporaryCopies(prk if assigned)
+        if not transferred:
+            securelyEraseTemporaryCopies(key if assigned)
 ```
 
 The suite bytes, recipient ID, recipient persistent public key, ephemeral
@@ -479,11 +493,11 @@ function encryptForIdentity(plaintext, recipientCredential, limits):
         limits.maximumEncryptedObjectBytes
     )
 
-    ephemeralPair = X25519.generateKeyPair(CSPRNG)
-    ephemeralPublic = X25519.canonicalPublicKeyBytes(ephemeralPair.publicKey)
-    nonce = CSPRNG.randomBytes(XCHACHA_NONCE_SIZE)
-
     try:
+        ephemeralPair = X25519.generateKeyPair(CSPRNG)
+        ephemeralPublic = X25519.canonicalPublicKeyBytes(ephemeralPair.publicKey)
+        nonce = CSPRNG.randomBytes(XCHACHA_NONCE_SIZE)
+
         shared = safeX25519(
             ephemeralPair.privateKey,
             recipient.x25519PublicKey
@@ -518,7 +532,7 @@ function encryptForIdentity(plaintext, recipientCredential, limits):
         assert length(encryptedObject) == totalLength
         return encryptedObject
     finally:
-        securelyEraseTemporaryCopies(ephemeralPair.privateKey)
+        securelyEraseTemporaryCopies(ephemeralPair.privateKey if assigned)
         securelyEraseTemporaryCopies(shared if assigned)
         securelyEraseTemporaryCopies(key if assigned)
 ```

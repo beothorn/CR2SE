@@ -135,6 +135,10 @@ its `cr2se.identity-encrypted.v1` payload is not this generic 132-byte envelope.
 On any failure, reject the complete object. Do not release provisional plaintext,
 partially accept malformed metadata, or log secret material. Erase ephemeral
 private keys, intermediate secrets, PRKs, and derived keys when no longer needed.
+Cleanup ownership must begin at acquisition and cover later entropy, encoding,
+signing, derivation, storage and cancellation failures. Primitives erase partial
+internal secrets on failure; returned secrets transfer directly to a guarded
+caller. Failed atomic identity storage retains neither private key.
 Never reuse a nonce with the same encryption key. Nonces are public, not passwords.
 
 This envelope authenticates ciphertext and recipient binding, not the sender.

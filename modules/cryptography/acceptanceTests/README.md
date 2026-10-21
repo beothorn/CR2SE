@@ -71,6 +71,19 @@ TEST CR-09 fresh object material and cleanup
   ACT success, failure and cancellation with instrumented protected-secret port
   ASSERT transient key material is released/erased when no longer needed
   ASSERT diagnostics/public results contain none of the fixture secrets
+  FOR EACH fault IN [second persistent pair generation, public-key encoding,
+                     identity derivation, binding signing, atomic key storage,
+                     ephemeral public-key encoding, nonce randomness after ephemeral generation,
+                     X25519 error or wrong-length result, HKDF extraction,
+                     HKDF expansion after PRK acquisition, wrong-length expanded key,
+                     header construction, AEAD encryption/decryption]:
+    ACT inject failure, then cancellation, at that boundary with acquired secrets recorded
+    ASSERT every acquired staging secret erased; no unowned returned secret
+    ASSERT primitive-internal partial secrets erased even if no value was returned
+    ASSERT no partial persistent identity committed on generation/storage failure
+  ACT successful key generation and successful derivation
+  ASSERT staging erased; committed handles remain usable
+  ASSERT returned shared/derived secrets owned by caller until erased on its exit
 
 TEST CR-10 construction separation
   ACT parse Messaging-specific envelope as generic 132-byte-header object
