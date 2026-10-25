@@ -38,9 +38,10 @@ The `pages.yml` workflow builds and checks pull requests. Pushes to `main` that
 change Markdown, website files, or the workflow rebuild and deploy the site.
 It can also be run manually through Actions.
 
-In repository **Settings → Pages → Build and deployment**, select **GitHub
-Actions** as the source. The workflow attempts initial Pages enablement, but
-GitHub may require an administrator to select this setting first.
+The workflow enables Pages when needed and selects **GitHub Actions** as the
+source, replacing any older branch-based Jekyll build. If repository policy
+prevents initial setup, an administrator can select **GitHub Actions** in
+**Settings → Pages → Build and deployment**.
 
 Default address: <https://beothorn.github.io/CR2SE/>.
 

@@ -68,6 +68,14 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Use Actions as the Pages source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pages_build_type="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.build_type')"
+          if [ "$pages_build_type" != "workflow" ]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/pages" -f build_type=workflow --silent
+          fi
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
