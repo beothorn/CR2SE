@@ -38,10 +38,12 @@ The `pages.yml` workflow builds and checks pull requests. Pushes to `main` that
 change Markdown, website files, or the workflow rebuild and deploy the site.
 It can also be run manually through Actions.
 
-The workflow enables Pages when needed and selects **GitHub Actions** as the
-source, replacing any older branch-based Jekyll build. If repository policy
-prevents initial setup, an administrator can select **GitHub Actions** in
-**Settings → Pages → Build and deployment**.
+In **Settings → Pages → Build and deployment**, select **GitHub Actions** as
+the source once. The deployment token cannot change this repository setting.
+Leaving an older branch-based source enabled can run a competing Jekyll build
+that overwrites the Astro deployment. The workflow attempts initial enablement
+when Pages is not already enabled; repository policy may require administrator
+setup in that case too.
 
 Default address: <https://beothorn.github.io/CR2SE/>.
 
