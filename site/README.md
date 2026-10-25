@@ -41,21 +41,23 @@ It can also be run manually through Actions.
 In **Settings → Pages → Build and deployment**, select **GitHub Actions** as
 the source once. The deployment token cannot change this repository setting.
 Leaving an older branch-based source enabled can run a competing Jekyll build
-that overwrites the Astro deployment. The workflow attempts initial enablement
-when Pages is not already enabled; repository policy may require administrator
-setup in that case too.
+that overwrites the Astro deployment. Pages must be enabled before the workflow
+runs.
 
-Default address: <https://beothorn.github.io/CR2SE/>.
+GitHub address: <https://beothorn.github.io/CR2SE/>. GitHub currently reports an
+inherited domain address of <http://www.isageek.com.br/CR2SE/>. The build reads
+the actual origin and base path from Pages automatically.
 
 ## A future custom domain
 
 1. Configure the custom domain in repository Settings → Pages and point its
    DNS to GitHub Pages following GitHub's custom domain instructions.
-2. Set the repository Actions variable `SITE_URL` to the full origin, such as
-   `https://example.org`.
-3. Set the Actions variable `BASE_PATH` to `/` for a site at the domain root.
-4. Run the deployment workflow again and enable HTTPS in Pages settings when
+2. Run the deployment workflow again; it reads the new origin and base path
+   directly from GitHub Pages.
+3. Enable HTTPS in Pages settings when
    the certificate is ready.
 
-Both variables can also be supplied locally for a build. Assets and navigation
-use the configured base; no URL edits in page templates are required.
+Optional repository Actions variables `SITE_URL` and `BASE_PATH` override the
+detected address. Set them to `https://example.org` and `/` for a domain root,
+or supply them locally for a build. Assets and navigation use the configured
+base; no URL edits in page templates are required.
