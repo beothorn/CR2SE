@@ -1,0 +1,32 @@
+---
+const points = [
+  [80,105], [240,65], [400,125], [120,260], [285,220],
+  [460,285], [65,405], [245,410], [415,435], [290,325],
+];
+const edges = [[0,1],[0,3],[0,4],[1,2],[1,4],[2,4],[2,5],[3,4],[3,6],[3,9],[4,5],[4,9],[5,8],[5,9],[6,7],[7,8],[7,9],[8,9]];
+---
+<figure class="network-figure">
+  <div class="network-heading"><span class="status-dot"></span> COOPERATION, BY DESIGN <span>FIG. 01</span></div>
+  <svg viewBox="0 0 520 510" role="img" aria-labelledby="network-title network-description">
+    <title id="network-title">A network without a central provider</title>
+    <desc id="network-description">Independent peers exchange resources with their neighbors. Three highlighted peers represent storage, computation, and communication. An illustration of the protocol concept.</desc>
+    <defs>
+      <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.7" fill="#63847b" opacity="0.32" /></pattern>
+      <radialGradient id="halo"><stop stop-color="#adffcf" stop-opacity="0.16" /><stop offset="1" stop-color="#adffcf" stop-opacity="0" /></radialGradient>
+    </defs>
+    <rect width="520" height="510" fill="url(#dots)" />
+    <circle cx="275" cy="255" r="240" fill="url(#halo)" />
+    {edges.map(([a,b]) => <line x1={points[a][0]} y1={points[a][1]} x2={points[b][0]} y2={points[b][1]} stroke="#63847b" stroke-width="1" />)}
+    <path class="network-path" d="M80 105 L285 220 L460 285 L415 435 L245 410 L290 325 L120 260" fill="none" stroke="#b2f8c7" stroke-width="1.5" stroke-dasharray="5 9" />
+    {points.map(([x,y],i) => <g>
+      <circle cx={x} cy={y} r={i===0||i===4||i===8 ? 25 : 13} fill="#182b28" stroke={i===0||i===4||i===8 ? '#b2f8c7' : '#63847b'} />
+      <circle cx={x} cy={y} r={i===0||i===4||i===8 ? 6 : 3} fill={i===0||i===4||i===8 ? '#b2f8c7' : '#63847b'} />
+    </g>)}
+    <g fill="#e0e9e2" font-family="monospace" font-size="11" letter-spacing="1.5">
+      <text x="45" y="151">STORAGE</text>
+      <text x="247" y="264">COMPUTE</text>
+      <text x="330" y="483">COMMUNICATION</text>
+    </g>
+  </svg>
+  <figcaption><span>No central node.</span><span>Many ways to contribute.</span></figcaption>
+</figure>

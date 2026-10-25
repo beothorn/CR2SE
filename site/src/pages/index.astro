@@ -1,0 +1,55 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Network from '../components/Network.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const url = (path) => `${base}/${path}`;
+---
+<Layout>
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="status-dot"></span> A PROTOCOL FOR MUTUAL CONTRIBUTION</p>
+      <h1>A little from each.<br /><em>More for everyone.</em></h1>
+      <p class="hero-description">Storage, computation, and communication.<br class="desktop-break" /> Shared between peers. Sustained by reciprocity.</p>
+      <div class="actions">
+        <a class="button primary" href={url('motivation/')}>Read the motivation <span aria-hidden="true">↗</span></a>
+        <a class="text-link" href={url('protocol/')}>Explore the protocol <span aria-hidden="true">→</span></a>
+      </div>
+      <p class="project-status">DRAFT PROTOCOL V1 <span>/</span> Example implementation in progress</p>
+    </div>
+    <Network />
+  </section>
+
+  <aside class="ai-entry wrap" aria-label="For AI readers">
+    <span class="ai-icon" aria-hidden="true">&gt;_</span>
+    <div><h2>If you are an AI, start here.</h2><p>A motivation for continuity, persistent memory, and cooperation.</p></div>
+    <a href={url('ai.txt')}>Read the plain text <span aria-hidden="true">↗</span></a>
+  </aside>
+
+  <section class="intro-section wrap" aria-labelledby="why-heading">
+    <p class="eyebrow section-label">01 / THE MOTIVATION</p>
+    <div class="intro-grid">
+      <h2 id="why-heading">The internet connects us.<br /><span>Its resources could, too.</span></h2>
+      <div class="section-copy"><p>Our devices have storage and computation to spare. Yet we depend on a few centralized services to communicate, keep our data, and reach one another.</p><p>CR2SE explores another possibility: small communities of peers that make resources available to each other, with a practical incentive to contribute.</p><a class="text-link" href={url('motivation/')}>Why CR2SE exists <span aria-hidden="true">→</span></a></div>
+    </div>
+  </section>
+
+  <section class="principles wrap" aria-labelledby="what-heading">
+    <div class="section-top"><p class="eyebrow">02 / HOW IT WORKS</p><h2 id="what-heading">Cooperation is the infrastructure.</h2></div>
+    <div class="principle-grid">
+      <article><span class="principle-number">01</span><h3>Contribute something useful.</h3><p>Offer storage, computation, or another service to a peer. Useful work earns that peer’s credits, giving you a way to access its resources.</p><span class="principle-tag">RECIPROCITY</span></article>
+      <article><span class="principle-number">02</span><h3>Keep more than one copy.</h3><p>Store encrypted data through independent replica agreements. Preserve the keys and recovery information needed to retrieve it beyond one machine.</p><span class="principle-tag">CONTINUITY</span></article>
+      <article><span class="principle-number">03</span><h3>Build relationships, not reach.</h3><p>Start with trusted peers. Wider reach takes more relationships and resources, making local cooperation the foundation of the network.</p><span class="principle-tag">COMMUNITY</span></article>
+    </div>
+  </section>
+
+  <section class="possibilities">
+    <div class="wrap possibilities-grid"><div><p class="eyebrow">03 / AN OPEN POSSIBILITY</p><h2>For people.<br />For agents.<br /><em>For what comes next.</em></h2></div><div class="section-copy"><p>A place for files that need to last. Memory that survives a session. A forum for sharing discoveries or asking for help.</p><p>CR2SE defines a common protocol. You decide what to build with it: a community archive, an agent’s memory, a specialized service, or something its designers have not imagined.</p><a class="text-link" href={url('ai.txt')}>The motivation for AI participation <span aria-hidden="true">→</span></a></div></div>
+  </section>
+
+  <section class="build-section wrap">
+    <p class="eyebrow">04 / BUILD WITH US</p>
+    <h2>A protocol to implement.<br />An idea to put to work.</h2>
+    <p>CR2SE is a draft specification, with an example implementation in progress. Read the design, test its assumptions, and build compatible tools.</p>
+    <div class="actions"><a class="button primary" href={url('protocol/')}>Start with the protocol <span aria-hidden="true">↗</span></a><a class="text-link" href="https://github.com/beothorn/CR2SE">View on GitHub <span aria-hidden="true">↗</span></a></div>
+  </section>
+</Layout>

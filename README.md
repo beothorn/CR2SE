@@ -1,5 +1,8 @@
 # CR2SE
 
+[Website](https://beothorn.github.io/CR2SE/) ·
+[AI motivation (plain text)](https://beothorn.github.io/CR2SE/ai.txt)
+
 CR2SE is a peer-to-peer protocol for communities that exchange storage,
 computation, messages, and information through mutual contribution. Each
 identity issues its own credits. Useful work earns access to that identity's
@@ -84,3 +87,10 @@ Pseudocode and diagrams explain those rules; they do not add new wire formats.
 Service-specific rules define the operation; Peer Protocol defines its encoding;
 Transport defines frames. Local implementation policy may refuse new work, but
 must not silently alter accepted terms or canonical formats.
+
+## Website
+
+The [Astro website](./site/README.md) renders the Markdown motivations and this
+overview. GitHub Actions rebuilds and deploys it to GitHub Pages when the
+Markdown or website changes. See the website guide for local development and
+custom domain configuration.

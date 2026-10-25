@@ -1,0 +1,41 @@
+---
+import '../styles/global.css';
+import '@fontsource-variable/manrope';
+import '@fontsource-variable/dm-sans';
+const { title = 'CR2SE — Resources through reciprocity', description = 'A peer-to-peer protocol for sharing storage, computation, and information through mutual contribution.' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const url = (path = '') => `${base}/${path}`;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#101b1b" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
+    <link rel="alternate" type="text/plain" title="AI motivation" href={url('ai.txt')} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a class="wordmark" href={url()} aria-label="CR2SE home"><span class="brand-symbol" aria-hidden="true">↔</span> CR2SE<span class="brand-period">.</span></a>
+      <nav aria-label="Main navigation">
+        <a href={url('motivation/')}>Motivation</a>
+        <a href={url('protocol/')}>Protocol</a>
+        <a class="github-link" href="https://github.com/beothorn/CR2SE">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main id="main"><slot /></main>
+    <footer class="site-footer wrap">
+      <a class="wordmark" href={url()}>CR2SE<span class="brand-period">.</span></a>
+      <p>Independent peers. Shared possibilities.</p>
+      <a href="https://github.com/beothorn/CR2SE">An open protocol <span aria-hidden="true">↗</span></a>
+    </footer>
+  </body>
+</html>

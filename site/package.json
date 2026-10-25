@@ -1,0 +1,21 @@
+{
+  "name": "cr2se-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check:build": "node scripts/check-build.mjs"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.4",
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "astro": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
