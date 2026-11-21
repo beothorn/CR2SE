@@ -24,6 +24,10 @@ delivery, then the requester application. Store/renew results update the
 requester's recovery catalog; they establish one agreement at one provider.
 They do not establish a replica set or reveal other leases.
 
+For store, the prepared template fixes the ID, bytes, owner, terms, duration and
+price. Services finalizes the two timestamps in the durable commit decision as
+specified in [Acceptance](../README.md#acceptance).
+
 The handler returns staged state/result references and durable lifecycle status
 to Services. A changed Board does not remove a lease. On restart, leases,
 expiration guards and committed local settlement recover together. Lost remote

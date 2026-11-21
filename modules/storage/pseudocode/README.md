@@ -364,39 +364,33 @@ function providerStore(
         release reservation
         raise InvalidUpload
 
-    acceptedAt = requireUint64(clock.currentUnixSeconds(), "acceptedAt")
-    expiresAt = checkedAddUint64(acceptedAt, metadata.retentionSeconds)
-    leaseId = generateUniqueLeaseId(durableStore)
+    // Bind the fresh ID, exact bytes, owner and economic terms before sampling time.
+    key = originalLocalOperationKey()
+    template = durableStore.prepareStore(
+        key, receiving, generateUniqueLeaseId(durableStore),
+        authenticatedRequesterId, localProviderId, offering,
+        metadata.sizeBytes, metadata.contentHash, metadata.retentionSeconds, price)
+    chargeToken = Ledger.prepare(key, reservation, price, template.reference)
+    require all participants durably prepared
 
-    lease = Lease {
-        leaseId: leaseId,
-        requesterId: authenticatedRequesterId,
-        providerId: localProviderId,
-        originalOfferingId: offering.offeringId,
-        originalOfferingRevision: offering.revision,
-        sizeBytes: metadata.sizeBytes,
-        contentHash: metadata.contentHash,
-        acceptedAt: acceptedAt,
-        expiresAt: expiresAt,
-        storePrice: price,
-        state: ACTIVE,
-        bytesHandle: receiving.finalHandle
-    }
-
-    // Atomically make both exact bytes and lease metadata durable. Do not
-    // report success while either exists only in volatile memory.
-    if durableStore.commitReceivingAsActive(receiving, lease) is ERROR:
-        abort receiving
-        release reservation
-        raise DurableCommitFailure
-
-    output = {
-        operation: "store", leaseId: leaseId,
-        sizeBytes: lease.sizeBytes, contentHash: lease.contentHash,
-        acceptedAt: acceptedAt, expiresAt: expiresAt, price: price
-    }
+    // Serialized by the original Services coordinator. On uncertain I/O,
+    // recover the authoritative decision before taking any new clock sample.
+    decision = Services.recoverDecision(key)
+    if decision is absent:
+        (acceptedAt, retentionAnchorAtSample) = clock.sampleUnixSecondsAndRetentionAnchor()
+        expiresAt = checkedAddUint64(acceptedAt, metadata.retentionSeconds)
+        if acceptedAt is not uint64 or addition failed:
+            Services.recordAndDeliverAbort(key, template.token, chargeToken)
+            raise InvalidLeaseTime
+        output = template.completeStoreResult(acceptedAt, expiresAt)
+        validateCompleteOutputAndFixedCharge(output, template, price)
+        decision = Services.recordCommitAtomically(
+            key, template.token, chargeToken, output, retentionAnchorAtSample)
+    Services.deliverRecordedDecisionAndRecoverAcknowledgements(key, decision)
+    if decision is abort:
+        raise StoreAborted
+    output = Services.readOriginalCommittedResult(key)
     successfullyReturnCompleteOutput(output)
-    CreditReservations.charge(reservation)
     return output
 ```
 

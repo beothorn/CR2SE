@@ -29,6 +29,16 @@ TEST ST-02 durable store and exact output
   ACT restart provider; retrieve using same authenticated owner and known lease ID
   ASSERT exact original bytes and retained terms available; one store charge17
 
+  ACT delay byte durability from 1000 to 1020; decide commit at 1020
+  ASSERT acceptedAt=1020; expiresAt=1030
+  ACT fresh store prepared at 1000; restart before decision; decide at 1040
+  ASSERT acceptedAt=1040; expiresAt=1050; no time spent prepared consumed retention
+  ACT lose decision-write acknowledgement; recover recorded commit; deliver twice at 1045
+  ASSERT lease and retained result both contain 1040/1050; one charge17
+  ACT delay result delivery past 1050; ASSERT original times replay unchanged
+  ACT recover confirmed absent decision after failed write; resume commit at 1060
+  ASSERT fresh decision uses 1060/1070 and only that decision is applied
+
 TEST ST-03 invalid upload and publication barrier
   FOR EACH [size0, size101, retention0/101, malformed hash, hash mismatch,
             missing/extra data byte, incomplete input, durable byte write failure]:

@@ -509,15 +509,36 @@ Durability does not require any particular medium or replication count. Data
 held only in volatile working memory at the moment success is reported does not
 satisfy the version 1 contract.
 
-`acceptedAt` is the provider's current Unix time in whole seconds when all five
-conditions become true. Unix time is the number of elapsed seconds since
-1970-01-01T00:00:00Z, excluding leap seconds.
+The provider starts paid retention when its local coordinator selects the
+commit decision for this store. At that point the exact bytes, reserved unique
+lease ID, owner, terms, duration, price and required participant preparations
+must already be durable. The coordinator samples provider Unix seconds
+(elapsed seconds since 1970-01-01T00:00:00Z excluding leap seconds) at this
+decision, after waiting for all preparations. This is the logical start of the
+provider's obligation if the decision commits. It is independent of when a
+participant acknowledges delivery or the requester receives the result.
 
 ```text
-expiresAt = acceptedAt + retentionSeconds
+acceptedAt = provider Unix seconds at commit selection
+expiresAt = checked uint64 addition of acceptedAt and retentionSeconds
 ```
 
-An addition that exceeds `uint64` must be rejected rather than wrapped.
+The coordinator atomically records the decision, both timestamps, the
+corresponding retention clock anchor and the complete result or an immutable
+reference sufficient to reproduce it. Before recording commit it must validate
+the final result and reject an unrepresentable clock value or sum by deciding
+abort. The same timestamps bind the active lease and the returned result.
+Decision persistence, delivery, downtime and network delay after this sample
+can consume retention. A delayed reply can therefore describe an expired
+lease. The duration is measured from the provider's decision, with no promise
+of a fresh duration after receipt. The provider must keep the exact bytes
+protected from preparation through decision recovery, even if delivery stalls.
+
+If writing the decision has an uncertain outcome, recover its authoritative
+record before trying again. A recorded decision always replays its original
+values. After confirming absence of a decision, an authorized coordinator
+resuming a commit takes a fresh sample. Participants never generate or shift
+timestamps on delivery. See the [local coordination contract](../../ModuleContracts.md#durable-effects-across-process-boundaries).
 
 ### Lease ID
 

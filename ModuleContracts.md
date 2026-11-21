@@ -240,6 +240,19 @@ between independent peers.
    and accounting obligations permit compaction; lifetime replay guards remain
    for claims, transfers and Messaging removal as their contracts require.
 
+For a Storage v1 `store` at the provider, preparation binds a durable result
+and effect **template** to the operation key. It fixes all fields except
+`acceptedAt` and `expiresAt`, and authorizes only the timestamp calculation
+in [Storage acceptance](modules/storage/README.md#acceptance). Ledger prepares
+the fixed charge against the immutable template reference. At step 3 the
+coordinator fills and validates those two fields and durably binds the exact
+completed result and effect to the original tokens in the same decision.
+Storage accepts finalization only from its authorized coordinator for that
+prepared key and template. It verifies the duration, fixed fields and decision
+binding before applying the lease. Repeated delivery with identical values is
+idempotent and conflicting values fail. An abort consumes no charge and
+releases the candidate. This specialization changes no peer message fields.
+
 External execution effects (such as Computation code affecting another system)
 cannot be rolled back by this protocol. Persist the execution attempt before
 starting it; never restart it because an internal response was lost. Use a
