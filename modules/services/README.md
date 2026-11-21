@@ -190,7 +190,11 @@ response. Loss or timeout cannot reverse that decision. A confirmed failure
 before commitment incurs zero charge on both sides.
 
 A requester observing a timeout records an inconclusive check and separately
-records remote commitment as unknown whenever commitment was possible. It must
+records remote commitment as unknown whenever commitment was possible. If no
+requester commit decision exists, the requester records a local abort and
+releases its check reservation once. Late evidence cannot reopen this terminal
+attempt. If a local decision may already exist, recover it before settling or
+releasing anything. A recovered local commit remains binding. The requester must
 not infer spendable issuer credit from the missing reply. Existing authorized
 Ledger balance/status operations can supply their defined observations. A
 balance difference alone cannot prove which invocation committed or authorize

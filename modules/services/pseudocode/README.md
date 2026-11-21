@@ -163,7 +163,8 @@ function runCheck(invocation, successfulOutput):
         checkReservation = Ledger.reserveCharge(..., checkPrice)
         evidence = invokeProviderEvidenceOperation(checkInput)
         if no complete valid response by deadline:
-            record zero requester-local charge and INCONCLUSIVE
+            recover any existing local decision; otherwise record local abort
+            deliver that original decision exactly once
             preserve original key and remote uncertainty if commitment possible
             return INCONCLUSIVE
         settle original requester reservation for complete valid evidence

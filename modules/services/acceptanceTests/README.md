@@ -85,6 +85,7 @@ TEST SV-08 checks and independent outcomes
   ASSERT requester outcome=inconclusive, requester posted charge delta=0, remote outcome unknown
   ACT restart both owners; recover original decisions
   ASSERT provider posted charge delta=3 exactly once; requester posted charge delta=0
+  ASSERT original requester hold released once by local abort; late evidence cannot repost it
   ASSERT no automatic refund, debit, retry, or trust change
   ACT Discovery entitled check at price0; ASSERT accepted within allowance
   ACT remote call to local-only check; ASSERT no invented remote operation
