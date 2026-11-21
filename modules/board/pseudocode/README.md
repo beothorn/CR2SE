@@ -124,17 +124,17 @@ function decodeBoardJson(encodedBytes, policy, pricingRegistry):
         maximumArrayElements = policy.resourceLimits.maximumArrayElements,
         maximumStringBytes = policy.resourceLimits.maximumStringBytes,
         requireValidUtf8 = true,
+        rejectDuplicateDecodedMemberNamesAtEveryDepth = true,
         retainExactIntegerTokens = true
     )
 
     return validateBoardValue(value, policy, pricingRegistry)
 ```
 
-Limits must be enforced while parsing, before uncontrolled allocation. The
-handling of duplicate member names inside one JSON object is a JSON-interface
-policy because version 1 does not assign them Board semantics. It must be
-deterministic and must not let validation inspect one value while later use
-observes another.
+Limits must be enforced while parsing, before uncontrolled allocation. Reject a repeated decoded
+member name before inserting it into an object, including within unknown fields.
+Each object has its own name set. A decoding error rejects the entire document
+before either strict validation or tolerant offering processing.
 
 ---
 
@@ -514,8 +514,8 @@ function validateOptionalPreconditions(object):
 
     result = empty list
     for each value in values:
-        if JSON type of value is not string:
-            raise ValidationError("each precondition must be a string")
+        if JSON type of value is not string or not isNamespacedName(value):
+            raise ValidationError("expected a namespaced precondition name")
         append value to result
     return result
 
@@ -547,8 +547,10 @@ function validateOptionalImplementationSuggestions(object, preserveUnknown):
     return result
 ```
 
-Version 1 does not say that precondition identifiers or optional suggestion
-strings must be nonempty. Such values may still be unknown or unusable.
+isNamespacedName splits the decoded string on literal periods and requires at
+least two nonempty components. Compare identifiers exactly. A well-formed
+unknown requirement prevents use until satisfied. Optional suggestion strings
+may be empty.
 Implementations must not infer behavior from descriptions, arbitrary `info`
 members, unknown fields, or array position.
 
@@ -958,7 +960,7 @@ atomic publication of a Board and all its definitions;
 removal preventing new selection without cancelling accepted ongoing work;
 array reordering having no priority or semantic effect;
 exact-integer parsing above the IEEE-754 safe-integer range;
-invalid UTF-8, malformed JSON, and deterministic duplicate-member handling;
+invalid UTF-8, malformed JSON, and mandatory rejection of duplicate decoded member names;
 every configured byte, depth, node, array, and string resource boundary;
 suggestions never triggering code execution or downloads;
 stale cached terms causing rejection and refresh;

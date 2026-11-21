@@ -50,7 +50,7 @@ Each entry is an **offering**:
 | `pricing` | Service-defined object with a nonempty `model` identifier. |
 | `checkPrice` | Optional separate check price `1..2^64-1`. |
 | `info` | Optional object containing service-defined limits and terms. |
-| `preconditions` | Optional array of required, nonempty namespaced strings. |
+| `preconditions` | Optional array of required names. Each decoded name contains at least two nonempty components separated by literal periods. Compare names exactly. |
 | `implementationSuggestions` | Optional array of implementation hints. |
 
 Exactly one of `price` and `pricing` is required. A standard service may require

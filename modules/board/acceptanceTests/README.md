@@ -20,6 +20,14 @@ TEST BD-02 document parsing
   FOR EACH [missing version/list, wrong list type, unsupported version,
             invalid UTF8, malformed JSON, duplicate JSON member]:
     ACT validate malformed Board; ASSERT REJECT; prior publication unchanged
+  ACT decode repeated "version" and nested members "name" and "na\u006de"
+  ASSERT each duplicate document rejected before publication or tolerant processing
+  ACT decode separate sibling objects each containing "name" once
+  ASSERT no duplicate-member error
+  FOR EACH name IN ["", "identity", ".identity", "cr2se.", "a..b"]:
+    ACT publish offering with preconditions=[name]; ASSERT invalid; prior snapshot unchanged
+  ACT discover offering requiring "example.unknown"; ASSERT structurally valid
+  ASSERT invocation unavailable while the requirement is unsupported
   ACT lossless parse price=9007199254740993 and price=U64_MAX
   ASSERT exact integers retained and re-emitted, never rounded
 
