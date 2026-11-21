@@ -631,7 +631,8 @@ function providerAnswerCheck(
 
     evidence = {leaseId: leaseId, offset: offset, value: pinnedByte.readExactly(1)}
     if evidence.value is not exactly one byte:
-        // The invocation layer may return an authenticated unavailable report;
+        // For confirmed loss of the valid authorized active byte, the
+        // invocation layer sends storage_byte_unavailable after abort;
         // it must never invent or echo an expected byte.
         returnUnavailableCheckResult()
     successfullyReturnCompleteEvidence(evidence)

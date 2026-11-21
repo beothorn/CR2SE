@@ -792,6 +792,16 @@ offset:  uint64
 value:   bytes (exactly 1 byte)
 ```
 
+After accepting a complete challenge from the authenticated owner of an active
+lease and validating its offset, the provider may discover that it cannot
+read the exact requested byte from its storage. If the check has no commit
+decision and its reservation has been released, the provider returns an
+uncharged Peer Protocol `failure` with code `storage_byte_unavailable`, then
+normal END. The report is bound to this exact challenge by its authenticated
+original stream. Missing or inactive leases, unauthorized callers, invalid
+offsets, timeouts and generic capacity failures must use their ordinary
+failure behavior.
+
 The expected byte is never sent to the provider. Otherwise a provider could
 pass by echoing the expected value without reading the stored object.
 
@@ -807,7 +817,9 @@ pass
 
 fail
     Authenticated, well-formed evidence arrived but value differs, or the
-    provider reports that the authorized active lease or byte is unavailable.
+    provider returns a complete timely storage_byte_unavailable failure and
+    normal END on the original authenticated stream, with independently known
+    activity and the original private byte expectation.
 
 inconclusive
     No authenticated and well-formed evidence arrived, the requester no longer

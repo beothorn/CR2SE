@@ -103,8 +103,11 @@ TEST ST-10 paid byte check outcomes
   ASSERT evidence={leaseId,offset:1,value:ASCII("b")}; expected byte never sent
   ASSERT local outcome=pass; chargeDelta=3
   ACT fresh check with timely complete wrong byte; ASSERT outcome=fail; chargeDelta=3
-  ACT provider validly reports authorized active byte unavailable
-  ASSERT outcome=fail; no successful evidence charge
+  ACT provider durably aborts and returns storage_byte_unavailable, then normal END
+  ASSERT timely original confirmed active byte report yields local fail and both posted charge deltas zero
+  FOR EACH [generic refusal, late report, abnormal END, private expectation missing]:
+    ASSERT report alone cannot establish fail or pass
+  ASSERT missing/inactive/foreign lease, invalid offset and generic resource failures do not emit this code
   ACT no complete valid evidence/timeout; ASSERT outcome=inconclusive; requester posted charge delta=0; apply SV-08 for provider state
   ACT original expected byte missing; ASSERT cannot claim pass
 

@@ -274,6 +274,7 @@ and service-specific retry guards apply.
 | `resource_limit` | Size, concurrency, time, or capacity limit reached. |
 | `conflict` | Stale expiration or conflicting replay ID. |
 | `internal_error` | Provider failed without successful output. |
+| `storage_byte_unavailable` | An authorized paid Storage byte check found the requested byte unavailable after validating the active lease and the original offset. See [Storage check](../storage/README.md#10-storage-check). |
 
 Unknown failure codes are generic service failures; do not retry automatically.
 Transport CANCEL ends the exchange, not already committed work. Socket loss or
