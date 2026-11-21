@@ -162,7 +162,11 @@ function runCheck(invocation, successfulOutput):
         checkPrice = requirePreviouslyAgreedCheckPrice(invocation.offering)
         checkReservation = Ledger.reserveCharge(..., checkPrice)
         evidence = invokeProviderEvidenceOperation(checkInput)
-        settle checkReservation only on complete valid evidence response
+        if no complete valid response by deadline:
+            record zero requester-local charge and INCONCLUSIVE
+            preserve original key and remote uncertainty if commitment possible
+            return INCONCLUSIVE
+        settle original requester reservation for complete valid evidence
         candidate = requesterEvaluate(evidence, locallyHeldExpectedValues)
     validateValue(candidate, invocation.definition.check.output, limits)
     require candidate outcome in {PASS, FAIL, INCONCLUSIVE}

@@ -80,7 +80,12 @@ TEST SV-08 checks and independent outcomes
   ASSERT requester retains expected byte; provider receives challenge only
   ACT well-formed wrong byte within deadline
   ASSERT outcome=fail and exact evidence charge, with no automatic refund
-  ACT no complete valid evidence; ASSERT chargeDelta=0; outcome=inconclusive when timeout
+  ACT confirmed precommit failure; ASSERT both local charge deltas zero
+  ACT provider durably commits evidence at price3; discard response; requester times out
+  ASSERT requester outcome=inconclusive, requester posted charge delta=0, remote outcome unknown
+  ACT restart both owners; recover original decisions
+  ASSERT provider posted charge delta=3 exactly once; requester posted charge delta=0
+  ASSERT no automatic refund, debit, retry, or trust change
   ACT Discovery entitled check at price0; ASSERT accepted within allowance
   ACT remote call to local-only check; ASSERT no invented remote operation
   ACT local verifier lacks original evidence; ASSERT inconclusive

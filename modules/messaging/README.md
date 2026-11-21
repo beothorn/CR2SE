@@ -990,7 +990,7 @@ whole message or successful delivery.
 
 Each completed check is charged at the current offering's `checkPrice` even
 when its outcome is `fail` or `inconclusive`. A check that returns no valid
-check result is not charged under the common check rules.
+check result posts zero requester-local charge. The provider retains its own durable decision under the common Services check rules.
 
 ---
 

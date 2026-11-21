@@ -122,7 +122,7 @@ TEST MS-13 paid byte evidence
   ACT timely correct/wrong evidence in separate cases
   ASSERT local outcomes pass/fail respectively; each complete valid evidence charged3
   ACT no valid evidence or late response; ASSERT inconclusive under timing rules
-  ASSERT timeout without complete evidence is not charged
+  ASSERT timeout without complete evidence posts zero requester-local charge; apply SV-08 for provider state
   FOR EACH [offset>=size, recovered/removed/expired placement, wrong caller]:
     ACT check; ASSERT rejected without charge
 

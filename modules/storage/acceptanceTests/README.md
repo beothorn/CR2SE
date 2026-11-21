@@ -95,7 +95,7 @@ TEST ST-10 paid byte check outcomes
   ACT fresh check with timely complete wrong byte; ASSERT outcome=fail; chargeDelta=3
   ACT provider validly reports authorized active byte unavailable
   ASSERT outcome=fail; no successful evidence charge
-  ACT no complete valid evidence/timeout; ASSERT outcome=inconclusive; chargeDelta=0
+  ACT no complete valid evidence/timeout; ASSERT outcome=inconclusive; requester posted charge delta=0; apply SV-08 for provider state
   ACT original expected byte missing; ASSERT cannot claim pass
 
 TEST ST-11 check bounds and timing policy

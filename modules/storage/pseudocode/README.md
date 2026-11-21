@@ -650,7 +650,7 @@ challenge and computes the outcome itself. A valid completed check result may
 be charged whether it is `pass`, `fail`, or `inconclusive`; malformed input,
 authentication failure, invalid offset, or execution that returns no valid
 check result is not charged. Expiration timing ambiguity and communication
-failure are inconclusive. A passing byte proves only timely availability of
+failure are inconclusive. After possible provider commitment, a requester timeout posts zero local charge and preserves remote uncertainty under the Services check rules. A passing byte proves only timely availability of
 that byte at that time.
 
 ---

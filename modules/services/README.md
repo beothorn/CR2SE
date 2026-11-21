@@ -181,7 +181,21 @@ its own work passed. For remote byte checks the provider returns the specified
 evidence; the requester holds the expected byte locally. A remote check is
 billable only when a complete valid evidence response is returned. Incorrect
 evidence may produce a paid `fail`; a locally observed timeout with no valid
-response is uncharged. Inconclusive checks do not prove dishonesty.
+response produces zero requester-local charge. A reservation is distinct from
+a posted charge. After dispatch, loss of evidence can leave the remote operation
+outcome unknown. Each node recovers its own reservation and decision by the
+original operation key. The provider can commit once it has durably retained
+complete valid evidence and prepared the agreed charge, before sending its
+response. Loss or timeout cannot reverse that decision. A confirmed failure
+before commitment incurs zero charge on both sides.
+
+A requester observing a timeout records an inconclusive check and separately
+records remote commitment as unknown whenever commitment was possible. It must
+not infer spendable issuer credit from the missing reply. Existing authorized
+Ledger balance/status operations can supply their defined observations. A
+balance difference alone cannot prove which invocation committed or authorize
+a refund, compensating debit, replay or trust change. A new paid check requires
+fresh authorization. Inconclusive checks do not prove dishonesty.
 
 A separate `checkPrice` is a positive integer in the same issuer's credits.
 Otherwise the contract defines checks included in the original price. A local
