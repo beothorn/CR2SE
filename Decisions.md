@@ -20,6 +20,7 @@ identifiers, cryptographic byte layouts, and existing deterministic vectors.
 | Specify spending versus issuing credits | Wanted work can pay with requester-issued credits without a fictitious self-balance. |
 | Keep one 121-byte transfer layout | Resolves contradictory transfer layouts and removes invented expiry/nonce fields from pseudocode. |
 | Permit metering only for Computation | Reconciles its bounded final charge with the common pre-agreed-price rule. |
+| Allow advisory retry timing on temporary refusals | An optional `retryAfterSeconds` on `resource_limit` lets requesters back off and retry pre-acceptance refusals without guessing, and rate limits refuse exchanges instead of silently closing connections that carry accepted work. |
 | Distinguish rejection from uncertain completion | Lost responses cannot safely imply rollback of a durable remote operation. |
 | Define local authentication, versioning, and blob handles | Removes Node API placeholders without coupling clients to filesystem paths or one language. |
 | Treat metadata exchanges as bounded control traffic | Makes bootstrap possible while keeping resource services priced. |

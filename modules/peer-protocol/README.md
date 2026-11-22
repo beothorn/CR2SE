@@ -250,9 +250,10 @@ as Messaging recovery. A later local check is not required to allow charging.
 A provider may instead send:
 
 ```text
-type:    "failure"
-code:    machine-readable string from the table below
-message: optional diagnostic UTF-8 string, at most 1,024 bytes
+type:              "failure"
+code:              machine-readable string from the table below
+message:           optional diagnostic UTF-8 string, at most 1,024 bytes
+retryAfterSeconds: optional uint64 in 1..86400, only with code "resource_limit"
 ```
 
 Then END. A failure is uncharged and cannot follow `result.end`. A provider
@@ -277,9 +278,39 @@ and service-specific retry guards apply.
 | `storage_byte_unavailable` | An authorized paid Storage byte check found the requested byte unavailable after validating the active lease and the original offset. See [Storage check](../storage/README.md#10-storage-check). |
 
 Unknown failure codes are generic service failures; do not retry automatically.
+
 Transport CANCEL ends the exchange, not already committed work. Socket loss or
 truncation after acceptance is outcome unknown. There is no generic remote
 job-status or invocation-resumption operation.
+
+### Temporary refusals and request rates
+
+A provider may refuse a request because the requester's identity exceeded a
+local quota or request rate. Such a refusal is a `failure` with code
+`resource_limit`, sent before acceptance, so it is uncharged and releases every
+reservation. A provider that expects the condition to clear may add
+`retryAfterSeconds`, the number of whole seconds after which the same request
+may succeed. The value is advisory: it is neither a reservation nor a promise.
+
+A requester that receives `retryAfterSeconds` must not send the same request
+again earlier than that many seconds after receiving the failure, measured on
+its own monotonic clock. Because the request was refused before acceptance, it
+may retry the same request automatically once that time has passed, still
+within its own spending bound and after fetching current terms. A
+`resource_limit` failure without `retryAfterSeconds` gives no timing guidance
+and is not retried automatically. Providers must not send the field with any
+other code, and requesters must ignore it there. This rule does not change the
+unknown-outcome rules above: a lost response, cancellation or disconnect after
+acceptance is never retried by this mechanism.
+
+A provider that applies a per-identity request rate should refuse each further
+new exchange of that identity with this failure rather than closing the
+connection, because closing ends every exchange on the connection, including
+accepted work whose outcome then becomes unknown. Closing a connection remains
+available to a provider whose resources are exhausted or whose peer continues
+to exceed its limit after refusals. Refusals under a rate limit are themselves
+bounded control traffic and need not allocate per-request state.
+
 
 ## Wanted offerings
 

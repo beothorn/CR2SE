@@ -93,6 +93,21 @@ TEST PP-09 failure and uncertain effects
   ACT disconnect/cancel after possible durable effect
   ASSERT outcome_unknown; no generic remote job-status or automatic retry invented
 
+TEST PP-09A temporary resource refusal
+  ACT requester exceeds provider's per-identity request rate; provider replies
+    failure resource_limit retryAfterSeconds=30 before acceptance
+  ASSERT no charge; reservation released; connection and other exchanges unaffected
+  ACT requester repeats the same request after 10 seconds
+  ASSERT requester refuses to send it; after 30 seconds it may retry within its bound
+  ACT resource_limit without retryAfterSeconds
+  ASSERT no automatic retry
+  FOR EACH [retryAfterSeconds0, 86401, string, negative, fraction]:
+    ACT decode failure with code resource_limit; ASSERT message rejected as malformed
+  ACT decode failure with code not_available and retryAfterSeconds30
+  ASSERT field ignored; no delay or automatic retry derived from it
+  ACT connection lost after acceptance
+  ASSERT outcome_unknown; retryAfterSeconds mechanism not applied
+
 TEST PP-10 wanted roles
   B opens stream to wanted publisherA with offer
   ACT A supplies locally authorized propose; B quotes; A accepts/sends input
