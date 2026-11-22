@@ -642,6 +642,10 @@ conditional request, or promise that a cached resource is still current. A new
 paid `get` is required to learn the publisher's current resource through this
 service.
 
+A publisher that cannot accept connections may instead have pages hosted by
+other providers under [Hosted Publications](../hosted-publications/README.md),
+which is a separate service and does not change this one.
+
 Several nodes may operate as one publisher identity. They are responsible for
 serving a coherent page and compatible current Board. CR2SE does not
 synchronize their files. If nodes return different resources for the same path,

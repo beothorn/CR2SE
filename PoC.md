@@ -104,6 +104,7 @@ of every replica and catalog.
 | Storage | Store; partial/full retrieve; renewal guard; removal; paid byte check; expiry; hash mismatch; authorization; independent replicas. |
 | Computation | Result; language error; time-limit completion; exact ceiling price; maximum reservation; unsupported runtime; local independent check. |
 | Messaging | Plain/encrypted placement; recipient-only discovery/recovery; sender signature; both recovery signatures; same-ID retry; pending/recovered renewal; release-credit quote and idempotent removal; status; byte check; replicas. |
+| Hosted Publications | Public and restricted publications; vector signatures and envelopes; list order/cursor and hidden-item parity; get bounds; page manifest and resources; feed posts; sequence selection and equivocation; renewal; release-credit removal; byte check; replicas. |
 | Discovery | All three signed record kinds; paid atomic index; resolveIdentity; locateShare; findTrust; listIdentities; three-field listTrust cursor; included retention check; tied equivocation; bounded iterative lookup. |
 | Public Files | Canonical multi-file manifest; signed catalog; paid manifest and piece ranges; multi-host resumption; piece/file hash validation; safe paths. |
 | Public Feeds | Signed publication; attachments; latest/since/interval reads; exclusive cursor; response-byte bounds; empty paid page; merged local feed. |

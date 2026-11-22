@@ -85,6 +85,12 @@ Services determine when two agreements protect the same item:
   have independently returned placement IDs from different provider
   identities.
 
+- For [Hosted Publications](./modules/hosted-publications/README.md), each placement is
+  one agreement. Replicas are the identical signed publication (same
+  `publicationId`, bytes and signature) at different host identities, each with
+  its own placement ID. Readers combine hosts by taking the highest verified
+  sequence; absence at one host proves nothing.
+
 Two leases or placements at the same provider identity do not satisfy the
 minimum independence rule. Multiple nodes operated by one identity may share
 state and failure modes and are still one provider for this purpose.

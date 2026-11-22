@@ -88,6 +88,8 @@ flowchart LR
     Feeds[Public Feeds] --> Identity[Identity and signatures]
     Messaging[Messaging] --> Identity
     Messaging --> Crypto[Cryptography]
+    Hosted[Hosted Publications] --> Identity
+    Hosted --> Crypto
     Discovery --> Identity
     Storage[Storage clients] --> Crypto
     Pages[Static Pages] --> Provenance[Authenticated publisher context]

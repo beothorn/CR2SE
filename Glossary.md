@@ -122,6 +122,12 @@ Pending placements can be removed early. Several placements may contain replicas
 of the same message. See
 [Messaging](./modules/messaging/README.md).
 
+**hosted publication**
+A publisher-signed page snapshot, page resource or feed post that any provider
+can retain for a paid period and any reader can verify, public or encrypted for
+chosen readers, so that a publisher that cannot accept connections can publish.
+See [Hosted Publications](./modules/hosted-publications/README.md).
+
 **replica set**
 A requester's local collection of independently accepted provider agreements
 protecting the same recoverable item. A replica set is not a provider-side

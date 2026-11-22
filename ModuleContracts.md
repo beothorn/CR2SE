@@ -28,6 +28,7 @@ service/version apply; optional does not mean partially implementing a contract.
 | [Node API](./modules/node-api/README.md) | Optional | Standard application-facing embedded/loopback interface. Other authorized local control is sufficient. |
 | [Computation](./modules/computation/README.md) | Optional | Bounded remote evaluation. |
 | [Messaging](./modules/messaging/README.md) | Optional | Signed message placements and recipient recovery. |
+| [Hosted Publications](./modules/hosted-publications/README.md) | Optional | Provider-hosted signed pages and feed posts for publishers that cannot accept connections. |
 | [Discovery](./modules/discovery/README.md) | Optional | Paid indexing and lookup; configured contacts can bootstrap the core. |
 | [Public File Sharing](./modules/file-sharing/README.md) | Optional | Public manifests, catalogs and piece retrieval. |
 | [Public Feeds](./modules/public-feeds/README.md) | Optional | Signed publication and paid feed reads. |

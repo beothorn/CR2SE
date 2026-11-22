@@ -25,6 +25,7 @@ documentation checks does not demonstrate a working protocol implementation.
 | [Node API](./modules/node-api/acceptanceTests/README.md) | Authentication, framing, every operation, blobs, budgets and session loss. |
 | [Computation](./modules/computation/acceptanceTests/README.md) | Runtime selection, timing, all outcomes, metering, limits and independent checks. |
 | [Messaging](./modules/messaging/acceptanceTests/README.md) | All placement operations, signed/encrypted payloads, receipts, replay and release credits. |
+| [Hosted Publications](./modules/hosted-publications/acceptanceTests/README.md) | Signed publications, visibility, envelopes, pages, feeds, versions, equivocation, renewal, release credits and replicas. |
 | [Discovery](./modules/discovery/acceptanceTests/README.md) | Every record/query type, canonicalization, indexing, ties, pagination and bounded lookup. |
 | [Public File Sharing](./modules/file-sharing/acceptanceTests/README.md) | Manifest, catalog, pieces, resumption, extraction and independent hosting. |
 | [Public Feeds](./modules/public-feeds/acceptanceTests/README.md) | Signed publication, attachments, selectors, ordering, bounds and aggregation. |

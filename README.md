@@ -48,6 +48,7 @@ package, class, database or programming language is prescribed.
 | [Node API](./modules/node-api/README.md) | Optional | Standard embedded/local IPC interface for applications. |
 | [Computation](./modules/computation/README.md) | Optional | Bounded runtime evaluation and metered completion. |
 | [Messaging](./modules/messaging/README.md) | Optional | Signed placements, recovery, receipts and release credits. |
+| [Hosted Publications](./modules/hosted-publications/README.md) | Optional | Provider-hosted signed pages and feed posts, public or encrypted. |
 | [Discovery](./modules/discovery/README.md) | Optional | Paid indexing and lookup of signed records. |
 | [Public File Sharing](./modules/file-sharing/README.md) | Optional | Canonical manifests, catalogs and verified piece retrieval. |
 | [Public Feeds](./modules/public-feeds/README.md) | Optional | Signed public messages and local feed aggregation. |

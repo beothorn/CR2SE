@@ -365,6 +365,10 @@ whose `publisherId` equals its own authenticated CR2SE identity and whose
 signature verifies under that identity. This rule makes a feed's ownership
 unambiguous.
 
+A publisher that cannot accept connections may instead have posts hosted by
+other providers under [Hosted Publications](../hosted-publications/README.md),
+which is a separate service and does not change this ownership rule.
+
 An identity may operate several nodes. Each node may serve all or only some of
 the identity's valid messages. CR2SE does not synchronize those nodes. A
 publisher that wants identical feeds must arrange replication outside this
