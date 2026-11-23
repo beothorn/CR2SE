@@ -418,6 +418,16 @@ stored `publicationId`, `publisherId`, `kind`, `sequence`, `publishedAt`,
 The reader then performs section 4 and the content checks. Repeating `get` is a
 new invocation and charge; get has no replay guard because it changes no state.
 
+**Wire pricing input.** The price of `get` depends on the size the host returns,
+which the requester cannot know beforehand, so the quote carries it: the
+[Peer Protocol](../peer-protocol/README.md) `pricingInputs` of a hosted `get` and
+of a hosted `renew` is `{"contentSize": decimal}`. For `get` the reader requires
+`1 <= contentSize <= maximumBytes` and prices the quote from it; the returned
+`contentSize` must equal the quoted value exactly, or the result is invalid and
+is not paid. For `renew` the publisher requires the value to equal the content
+size it stored. A hosted `remove` quote carries its `releaseCredits` as Messaging
+`remove` does.
+
 ---
 
 ## 10. Renew, remove and check

@@ -163,7 +163,7 @@ creditIssuer:     identity
 priceMode:        "fixed" or "metered"
 maximumPrice:     uint64 (exact price when fixed)
 pricingInputs:    object; the extra uint64 values listed below, or empty
-releaseCredits:   optional uint64, required only for Messaging remove
+releaseCredits:   optional uint64, required only for Messaging and Hosted Publications remove
 transferId:       the proposal's ID, only for third-party credits
 transferFee:      the proposal's exact fee, only for third-party credits
 ```
@@ -217,6 +217,7 @@ Provider-dependent `pricingInputs` are:
 | File Sharing `download` | `downloadBytes` |
 | Storage `renew` | `sizeBytes` |
 | Messaging `recover`, `renew` | `payloadSize` |
+| Hosted Publications `get`, `renew` | `contentSize` |
 | Other operations | Empty object |
 
 Each value is a uint64 decimal string. Validate it against retained original
