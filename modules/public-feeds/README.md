@@ -829,6 +829,12 @@ To refresh a combined view it:
 6. merges valid messages by `publishedAt`, using publisher ID and message ID as
    deterministic application tie-breakers.
 
+Within a merged view, repeated observations with the same publisher ID, message
+ID and canonical message bytes contribute one post. If verified observations
+for that identity pair contain different canonical message bytes, the reader
+records a local conflict and omits that identity pair from the merged view.
+The result is independent of arrival order. Other identity pairs remain eligible.
+
 For example, a first request for ten recent messages is:
 
 ```text

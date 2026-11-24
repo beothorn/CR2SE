@@ -107,6 +107,12 @@ TEST PF-12 merged feed and content authority
   ACT combine independently verified responses from two publishers, including repeated messages
   ASSERT retain publisher provenance; deduplicate by publisher/message identity
   ASSERT same opaque messageId from different publishers not collapsed as same message
+  ACT merge repeated copies of one verified message
+  ASSERT one post appears for its publisherId and messageId
+  ACT merge two independently valid messages with the same publisherId and messageId
+      but different bodies, in each arrival order, alongside an unrelated valid post
+  ASSERT a local conflict is recorded for that pair, neither variant appears,
+         and the unrelated post remains visible
   ACT body contains markup/instructions/links and attachment misleading extension
   ASSERT body treated as text; no automatic execution, unsafe path use or extra paid fetch
 

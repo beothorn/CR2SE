@@ -126,14 +126,19 @@ function checkRead(originalInput, agreedTerms, output):
 catch validation mismatch: return FAIL
 
 function gatherCombinedFeed(subscriptions, localPolicy):
-    combined = []
+    verifiedPages = []
     concurrently for publisher in subscriptions within budget:
         authenticate publisher; fetch current Board; select compatible offering
         page = invoke read with bounded limit and explicit maximum price
-        if checkRead(...) == PASS: append page.messages
+        if checkRead(...) == PASS: collect page into verifiedPages
         else record provider failure without poisoning other feeds
-    deduplicate by (publisherId, messageHash)
-    sort using application display policy with deterministic tie-breakers
+    combined = []
+    for key, observations in group messages from verifiedPages by (publisherId, messageId):
+        if observations contain different canonical message bytes:
+            record local conflict for key
+        else:
+            append one verified observation to combined
+    sort combined by publishedAt with deterministic publisherId and messageId tie-breakers
     return combined
 ```
 

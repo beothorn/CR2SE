@@ -10,7 +10,7 @@
 | Local publication result | Authorized publisher application: immutable complete signed message and ID/hash association, durable before success. Failed publication exposes no partial message. |
 | Read result | [Services](../../services/inputs/README.md), then requester: `operation:"read"`, original `selector`, complete `messages`, `more:bool`, `price:uint64`. Messages include canonical fields/attachments, signature and calculated 32-byte `messageHash`. |
 | Local check | Requester: pass/fail/inconclusive from original request/terms and complete returned messages, not a provider assertion. |
-| Combined feed | Requester application: locally merged verified messages with publisher provenance and deduplication; not a new network service result. |
+| Combined feed | Requester application: locally merged verified messages with publisher provenance, deduplicated by publisher ID and message ID, omitting conflicted pairs; not a new network service result. |
 
 Select matching messages in the specified newest-first order and apply the
 exclusive cursor. Take consecutive entries until count or response-byte bound;
