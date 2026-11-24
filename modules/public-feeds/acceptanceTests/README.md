@@ -53,9 +53,9 @@ TEST PF-05 newest-first latest read
 
 TEST PF-06 since and interval boundaries
   ACT read(since,fromInclusive101)
-  ASSERT [m3],price3
+  ASSERT [m3],selector="since",price3
   ACT read(interval,fromInclusive100,toExclusive101)
-  ASSERT [m2,m1],price3; m3 excluded at upper bound
+  ASSERT [m2,m1],selector="interval",price3; m3 excluded at upper bound
   ACT adjacent interval[101,102)
   ASSERT [m3]; no boundary message duplicated between intervals
 
@@ -99,6 +99,8 @@ TEST PF-11 complete output and independent verification
     ACT local check with original publisher/request/terms
     ASSERT outcomes pass,fail,inconclusive respectively
   ASSERT check verifies counts/byte limits/cursor/signatures/hashes, not provider's assertion
+  ACT check complete output with selector missing or different from original input
+  ASSERT FAIL even when all returned messages satisfy the original selector
   ASSERT no remote check charge or automatic trust update/refund
 
 TEST PF-12 merged feed and content authority

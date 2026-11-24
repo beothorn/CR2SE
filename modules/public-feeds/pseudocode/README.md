@@ -101,7 +101,7 @@ function read(requester, offering, input):
         append message; totalBytes += n
 
     reserve fixed advertised read price
-    returnAndCommitExactly({operation:"read", selectedAt:snapshotAt,
+    returnAndCommitExactly({operation:"read", selector:query.selector,
         messages:selected, more:anotherMatchingMessageExisted,
         price:offering.pricing.readPrice})
 ```
@@ -116,6 +116,7 @@ selection snapshot.
 function checkRead(originalInput, agreedTerms, output):
     if required bytes unavailable or limits prevent checking: return INCONCLUSIVE
     require output.operation == "read" and output.price == agreed price
+    require output.selector == originalInput.selector
     require message count <= originalInput.limit and advertised maximum
     require total canonical bytes <= maximumResponseBytes
     for each message:
