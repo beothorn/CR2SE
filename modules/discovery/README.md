@@ -1154,7 +1154,22 @@ a share, honesty of a trust score, or continued availability after the answer.
 For an `index` placement, the requester supplies its `indexId` and `recordId`.
 Before `storedUntil`, the provider returns the exact retained record bytes. The
 requester verifies the record ID and byte equality with the originally indexed
-record. The outcome is:
+record.
+
+After accepting a check from the authenticated owner of an active placement,
+with the matching record ID and an available included allowance, the provider
+may discover that it cannot read the exact retained bytes. It then consumes the
+allowance durably and returns an uncharged Peer Protocol `failure` with code
+`discovery_record_unavailable`, then normal END. The report is bound to this
+exact check by its authenticated original stream. An unknown or expired
+placement, an unauthorized caller, a different record ID, an allowance already
+consumed, timeouts and generic capacity failures use their ordinary failure
+behavior, normally `not_available`, and never this code. Because the requester
+independently knows that its placement is active and unchecked, the dedicated
+code cannot be confused with a refusal of an allowance consumed by an earlier
+check whose response was lost.
+
+The outcome is:
 
 ```text
 pass
@@ -1162,12 +1177,13 @@ pass
     match the accepted record.
 
 fail
-    The provider returns complete different bytes or validly reports that the
-    accepted placement is absent before storedUntil.
+    The provider returns complete different bytes, or returns a complete timely
+    discovery_record_unavailable failure and normal END on the original
+    authenticated stream before storedUntil.
 
 inconclusive
     The response is missing, incomplete, late, or cannot be associated with
-    the accepted placement.
+    the accepted placement, or the provider returns any other failure.
 ```
 
 The check proves possession only at the check time. It does not prove

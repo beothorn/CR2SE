@@ -28,6 +28,7 @@ identifiers, cryptographic byte layouts, and existing deterministic vectors.
 | Treat metadata exchanges as bounded control traffic | Makes bootstrap possible while keeping resource services priced. |
 | Correct Discovery and Messaging pseudocode | Aligns record hashes, cursors, included checks, renewal, receipts, and release credits with the service specifications. |
 | Align Discovery keys, record times and candidate groups | The identity key is the raw ID, records need issuedAt < expiresAt, and a candidate's tied address records are returned together within indexerLimit, so a referral cannot hide equivocation ([#17](https://github.com/beothorn/CR2SE/issues/17), [#18](https://github.com/beothorn/CR2SE/issues/18), [#19](https://github.com/beothorn/CR2SE/issues/19)). |
+| Report a lost Discovery placement distinctly | `discovery_record_unavailable` lets a retention check fail on lost bytes without confusing that with a refused, already consumed allowance, so indexers stay accountable for paid retention ([#20](https://github.com/beothorn/CR2SE/issues/20)). |
 
 This is a draft revision, not a claim of compatibility with an already deployed
 version 1 implementation. The new peer binding and completed local API need

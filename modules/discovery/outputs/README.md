@@ -18,7 +18,7 @@ clients, which may provide validated hints to Identity/Transport applications.
 | `findTrust` | `subjectId`, `trustRecords`, `indexers` | Current exact-subject statements ordered by evaluator and record ID, complete tied groups. |
 | `listIdentities` | `identities`, `more` | Unique ordered IDs strictly beyond cursor. It describes this provider's knowledge, not global membership. |
 | `listTrust` | `trustRecords`, `more` | Complete selected page in `(evaluatorId,subjectId,recordId)` order. No selective suppression of scores within the advertised index. |
-| Remote check | `indexId`, `recordId`, `record` | Exact retained bytes; complete valid evidence consumes the allowance once, with no separate check price. |
+| Remote check | `indexId`, `recordId`, `record` | Exact retained bytes; complete valid evidence consumes the allowance once, with no separate check price. An authorized check of an active placement whose bytes are lost returns the uncharged `discovery_record_unavailable` failure, consuming the allowance; the requester computes `fail`. |
 
 Candidate indexer entries and record validity follow the specification's exact
 schema, ordering and timing limits. Empty query/list results are charged

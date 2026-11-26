@@ -221,14 +221,20 @@ function checkIndexPlacement(requester, input, now):
     require input.recordId == placement.recordId
     require includedCheckState == AVAILABLE
     mark IN_PROGRESS; quote zero additional credits
+    if the exact retained bytes cannot be read:
+        durably mark CONSUMED
+        send failure code discovery_record_unavailable, then END
+        return
     evidence = {indexId, recordId, record:exact retained bytes}
     send complete evidence within accepted checkResponseSeconds
     on complete response: durably mark CONSUMED
     on failed response before completion: restore AVAILABLE
 
 function verifyPlacementCheck(expected, evidence, deadline):
-    if unavailable, incomplete, late, or unassociated: return INCONCLUSIVE
-    if valid response reports absent active placement: return FAIL
+    if complete timely discovery_record_unavailable on the original stream
+            for an independently known active placement: return FAIL
+    if any other failure, or unavailable, incomplete, late, or unassociated:
+        return INCONCLUSIVE
     if evidence.record != expected.exactRecordBytes: return FAIL
     require SHA256(signingBytes(evidence.record)) == expected.recordId
     return PASS

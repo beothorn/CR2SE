@@ -277,6 +277,7 @@ and service-specific retry guards apply.
 | `conflict` | Stale expiration or conflicting replay ID. |
 | `internal_error` | Provider failed without successful output. |
 | `storage_byte_unavailable` | An authorized paid Storage byte check found the requested byte unavailable after validating the active lease and the original offset. See [Storage check](../storage/README.md#10-storage-check). |
+| `discovery_record_unavailable` | An authorized included Discovery retention check found the retained record bytes unavailable after validating the active placement, its record ID and its unconsumed allowance; the allowance is consumed. See [Discovery check](../discovery/README.md#23-verification-check). |
 
 Unknown failure codes are generic service failures; do not retry automatically.
 
@@ -332,8 +333,9 @@ or compel spending. Current terms and credit direction follow Board rules.
 Use `mode:"check"` only for remote checks. The proposal input follows the
 service's `check.input`. Storage and Messaging return their byte evidence,
 without a provider-computed `outcome`. Discovery returns `indexId`, `recordId`,
-and `record` (exact retained bytes). The requester builds the logical check
-output and computes pass/fail/inconclusive locally.
+and `record` (exact retained bytes), or the `discovery_record_unavailable`
+failure for a placement it can no longer read. The requester builds the logical
+check output and computes pass/fail/inconclusive locally.
 
 The evidence value uses these schemas: IDs and record/value fields are `bytes`;
 offset is `uint64`. Require the exact fixed lengths from the service specification.

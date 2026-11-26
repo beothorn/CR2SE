@@ -127,8 +127,12 @@ TEST DI-13 included retention check
   ASSERT local outcome=pass for timely match; allowance consumed once
   ACT second new check after allowance consumed
   ASSERT not entitled to another included check; no invented paid checkPrice
+  ASSERT refusal is not_available and the requester outcome is inconclusive, never fail
   ACT unauthorized owner/wrong record ID/expired placement
-  ASSERT no protected evidence or allowance consumption
+  ASSERT no protected evidence or allowance consumption; not_available
+  ACT authorized timely check of an active placement whose bytes the provider lost
+  ASSERT failure discovery_record_unavailable then END; allowance consumed
+  ASSERT requester outcome=fail; a repeated check is refused not_available
   ACT no complete evidence response
   ASSERT allowance not consumed; outcome=inconclusive
   ACT a fresh placement returns complete differing bytes
