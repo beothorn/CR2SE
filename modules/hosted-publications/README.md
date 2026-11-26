@@ -347,7 +347,11 @@ a new publication whose sequence equals the sequence of a pending publication
 with a different publicationId is rejected as a conflict
 ```
 
-A host need not require sequences to increase; readers choose (section 13). The
+A host need not require sequences to increase; readers choose (section 13).
+Because of this rule, entries at one host never share a sequence within a
+kind; the `publicationId` in the list order and cursor makes the key total and
+the cursor exclusive. Equal sequences with different IDs can only meet at a
+reader combining hosts (section 13). The
 output is:
 
 ```text
@@ -474,6 +478,11 @@ ASCII("CR2SE-HOSTED-PAGE-MANIFEST-V1")
     || resourcePublicationId
 ```
 
+The resource size and SHA-256 are those of the resource publication's stored
+content: for a restricted resource that is its envelope (section 5), so the entry
+equals the resource publication's `contentSize` and `contentHash` in both
+visibilities. A reader checks the entry before decrypting.
+
 A length-prefixed string is `uint64_be(byte length) || UTF-8 bytes` as in
 [Public Feeds](../public-feeds/README.md#2-bytes-integers-text-and-time). The
 count is `1 .. maximumManifestResources`. The root path `/` must be present and
@@ -547,7 +556,8 @@ exists elsewhere. Readers should query several hosts and treat the highest
 verified sequence as best-known, not as proven-latest. A publisher that loses
 its counter should choose a sequence not less than `publishedAt` (seconds) and
 greater than any sequence it knows it used, to avoid reuse. A publisher may stop renewing, or remove, old versions.
-Version 1 has no tombstone or retraction.
+Version 1 has no tombstone or retraction, and no cross-host latest-version
+hint: a host's answer cannot prove that nothing newer exists elsewhere.
 
 ---
 

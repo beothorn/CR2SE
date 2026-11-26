@@ -38,8 +38,9 @@ TEST HP-04 visibility
   ACT P lists and gets V3; ASSERT permitted
 
 TEST HP-05 list order and cursor
-  seed feed-post sequences [(7,idA),(7,idB),(5,idC)] with idA<idB
-  ACT list(limit2); ASSERT [(7,idB),(7,idA)]; more=true; price1
+  seed feed-post sequences [(9,idB),(7,idA),(5,idC)]
+  ACT store feed-post (7,idD); ASSERT conflict failure without charge
+  ACT list(limit2); ASSERT [(9,idB),(7,idA)]; more=true; price1
   ACT list(before 7/idA, limit2); ASSERT [(5,idC)]; more=false
   FOR EACH [one cursor field, limit0, limit above maximum, kind resource]:
     ACT list; ASSERT failure without charge
