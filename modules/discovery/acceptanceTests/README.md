@@ -97,6 +97,10 @@ TEST DI-10 discovery keys and candidate order
   FOR EACH fixed key/ID pair: ASSERT distance=independent unsigned256 big-endian XOR
   ACT return candidate entries
   ASSERT sorted distance then recordId for equivocations
+  fixture candidate C with tied address records r1<r2
+  ACT lookup with indexerLimit2; ASSERT entries (C,r1),(C,r2) together
+  ACT indexerLimit1; ASSERT pre-acceptance result-limit rejection
+  ACT C followed by farther D, indexerLimit2; ASSERT only C's complete group
   ASSERT each entry identity matches current valid address-record signer
   ASSERT returned candidates are hints requiring new identity authentication/Board terms
 

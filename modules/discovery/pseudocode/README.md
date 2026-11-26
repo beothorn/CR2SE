@@ -30,7 +30,8 @@ function validateCommonRecord(encoded, terms, now):
     require encoded length is bounded before allocation
     record = parse exact version/type tags and big-endian fields
     require record.publisherId == Identity.deriveVersion1Id(record.publicKey)
-    require record.issuedAt <= record.expiresAt
+    require record.issuedAt < record.expiresAt
+    require record.expiresAt > now
     require record.issuedAt <= now + terms.maximumClockSkewSeconds
     require record.expiresAt - record.issuedAt
             <= terms.maximumRecordLifetimeSeconds
@@ -45,7 +46,7 @@ function validateCommonRecord(encoded, terms, now):
 Address records validate unique, canonically ordered endpoints, supported
 network/address representations, ports, and `maximumEndpointsPerRecord`.
 Share records validate 32-byte share ID, provider identity, positive/negative
-availability semantics, and any canonical endpoints. Trust records validate
+availability semantics, and the single availability byte 0x00 or 0x01. Trust records validate
 subject ID and the exact trust representation. The fixed prefixes and complete
 byte layouts are exactly those in the normative specification; no JSON or
 native serialization may replace them.
@@ -60,19 +61,27 @@ the specification; a newer record never cancels an existing paid placement.
 ```text
 function discoveryKey(recordOrQuery):
     switch type:
-      ADDRESS: return SHA256(normative address-key prefix || identityId)
-      SHARE:   return SHA256(normative share-key prefix || shareId)
-      TRUST:   return SHA256(normative trust-key prefix || subjectId)
+      ADDRESS: return identityId
+      SHARE:   return SHA256(ASCII("CR2SE-DISCOVERY-SHARE-KEY-V1") || shareId)
+      TRUST:   return SHA256(ASCII("CR2SE-DISCOVERY-TRUST-KEY-V1") || subjectId)
 
 function xorDistance(left, right):
     require both are 32 bytes
     return unsignedBigEndianInteger(left XOR right)
 
 function candidateIndexers(key, knownPeers, count):
-    authenticate and deduplicate candidates by identity ID
-    sort ascending by (xorDistance(identityId, key), identityId)
-    return first count
+    entries = one entry per (identityId, current tied latest address record)
+        for identities believed to advertise a compatible Discovery offering
+    sort ascending by (xorDistance(identityId, key), recordId)
+    group entries by identityId, keeping that order
+    if there is a first group and its size > count:
+        reject before acceptance with a result-limit error
+    return the entries of as many complete leading groups as fit in count
 ```
+
+`count` is the request's `indexerLimit` and counts entries, not identities.
+An identity whose tied address records do not all fit is omitted together with
+every farther identity, so a candidate's equivocation is never concealed.
 
 Distance is a deterministic selection tool, not proof of honesty or a routing
 guarantee.

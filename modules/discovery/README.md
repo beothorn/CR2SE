@@ -595,7 +595,15 @@ an offering before invocation.
 
 Candidate entries are sorted by XOR distance from the lookup's discovery key,
 then by record ID when equivocation produces more than one address record for
-one identity. Duplicate `(identityId, recordId)` pairs are forbidden.
+one identity. Duplicate `(identityId, recordId)` pairs are forbidden. All tied
+latest address records of one identity form that identity's **candidate
+group** and are returned together.
+
+A lookup's `indexerLimit` counts entries, not identities. The provider returns
+as many complete candidate groups, in order, as fit in the limit and omits every
+farther group once one does not fit. If the closest group alone does not fit,
+it rejects before acceptance with a result-limit error, as for signed records,
+rather than conceal a candidate's equivocation.
 
 The provider may return candidates farther from the key than itself. This lets
 a requester escape incomplete local routing tables. The requester, not the
